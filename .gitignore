@@ -35,3 +35,5 @@ lstest
 .debug_build
 log
 *.gz
+python-bindings/.eggs
+record.txt
