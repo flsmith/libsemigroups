@@ -35,6 +35,16 @@ static inline size_t evaluate_reduct(Semigroup* S, word_t const& word) {
   return evaluate_reduct(*S, word);
 }
 
+static inline void test_idempotent(Semigroup& S, Element const* x) {
+  REQUIRE(S.is_idempotent(S.position(x)));
+  Element* y = x->really_copy();
+  y->redefine(x, x);
+  REQUIRE(*x == *y);
+  REQUIRE(S.fast_product(S.position(x), S.position(x)) == S.position(x));
+  y->really_delete();
+  delete y;
+}
+
 TEST_CASE("Semigroup 01: small transformation semigroup",
           "[quick][semigroup][finite][01]") {
   std::vector<Element*> gens = {new Transformation<u_int16_t>({0, 1, 0}),
@@ -917,7 +927,7 @@ TEST_CASE("Semigroup 22: letter_to_pos [after add_generators]",
   really_delete_cont(gens);
 }
 
-TEST_CASE("Semigroup 23: idempotents_cbegin/cend [1 thread]",
+TEST_CASE("Semigroup 23: cbegin_idempotents/cend [1 thread]",
           "[quick][semigroup][finite][23]") {
   std::vector<Element*> gens
       = {new Transformation<u_int16_t>({0, 1, 2, 3, 4, 5}),
@@ -929,12 +939,11 @@ TEST_CASE("Semigroup 23: idempotents_cbegin/cend [1 thread]",
   S.set_report(SEMIGROUPS_REPORT);
 
   size_t nr = 0;
-  for (auto it = S.idempotents_cbegin(); it < S.idempotents_cend(); it++) {
-    REQUIRE(S.fast_product(*it, *it) == *it);
+  for (auto it = S.cbegin_idempotents(); it < S.cend_idempotents(); it++) {
+    test_idempotent(S, *it);
     nr++;
   }
   REQUIRE(nr == S.nridempotents());
-
   really_delete_cont(gens);
 }
 
@@ -950,9 +959,9 @@ TEST_CASE("Semigroup 24: idempotent_cend/cbegin [1 thread]",
   S.set_report(SEMIGROUPS_REPORT);
 
   size_t nr  = 0;
-  auto   end = S.idempotents_cend();
-  for (auto it = S.idempotents_cbegin(); it < end; it++) {
-    REQUIRE(S.fast_product(*it, *it) == *it);
+  auto   end = S.cend_idempotents();
+  for (auto it = S.cbegin_idempotents(); it < end; it++) {
+    test_idempotent(S, *it);
     nr++;
   }
   REQUIRE(nr == S.nridempotents());
@@ -982,7 +991,7 @@ TEST_CASE("Semigroup 25: is_idempotent [1 thread]",
   REQUIRE(nr == S.nridempotents());
 }
 
-TEST_CASE("Semigroup 26: idempotents_cbegin/cend, is_idempotent [2 threads]",
+TEST_CASE("Semigroup 26: cbegin_idempotents/cend, is_idempotent [2 threads]",
           "[standard][semigroup][finite][multithread][26]") {
   std::vector<Element*> gens
       = {new Transformation<u_int16_t>({1, 2, 3, 4, 5, 6, 0}),
@@ -994,16 +1003,16 @@ TEST_CASE("Semigroup 26: idempotents_cbegin/cend, is_idempotent [2 threads]",
 
   size_t nr = 0;
 
-  for (auto it = S.idempotents_cbegin(); it < S.idempotents_cend(); it++) {
-    REQUIRE(S.fast_product(*it, *it) == *it);
+  for (auto it = S.cbegin_idempotents(); it < S.cend_idempotents(); it++) {
+    test_idempotent(S, *it);
     nr++;
   }
   REQUIRE(nr == S.nridempotents());
   REQUIRE(nr == 6322);
 
   nr = 0;
-  for (auto it = S.idempotents_cbegin(); it < S.idempotents_cend(); it++) {
-    REQUIRE(S.is_idempotent((*it)));
+  for (auto it = S.cbegin_idempotents(); it < S.cend_idempotents(); it++) {
+    test_idempotent(S, *it);
     nr++;
   }
   REQUIRE(nr == S.nridempotents());
