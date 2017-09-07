@@ -283,6 +283,41 @@ BENCHMARK(BM_size_reserve_62)
     ->Repetitions(10)
     ->UseManualTime();
 
+static void BM_nridempotents_62(benchmark::State& state) {
+  while (state.KeepRunning()) {
+    std::vector<Element*> gens
+        = {new Transformation<uint_fast8_t>({1, 7, 2, 6, 0, 4, 1, 5}),
+           new Transformation<uint_fast8_t>({2, 4, 6, 1, 4, 5, 2, 7}),
+           new Transformation<uint_fast8_t>({3, 0, 7, 2, 4, 6, 2, 4}),
+           new Transformation<uint_fast8_t>({3, 2, 3, 4, 5, 3, 0, 1}),
+           new Transformation<uint_fast8_t>({4, 3, 7, 7, 4, 5, 0, 4}),
+           new Transformation<uint_fast8_t>({5, 6, 3, 0, 3, 0, 5, 1}),
+           new Transformation<uint_fast8_t>({6, 0, 1, 1, 1, 6, 3, 4}),
+           new Transformation<uint_fast8_t>({7, 7, 4, 0, 6, 4, 1, 7})};
+
+    Semigroup S = Semigroup(gens);
+    really_delete_cont(gens);
+
+    S.reserve(597369);
+    S.enumerate();
+    S.set_max_threads(state.range(0));
+
+    auto start = std::chrono::high_resolution_clock::now();
+    S.nridempotents();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds
+        = std::chrono::duration_cast<std::chrono::duration<double>>(end
+                                                                    - start);
+    state.SetIterationTime(elapsed_seconds.count());
+  }
+}
+
+BENCHMARK(BM_nridempotents_62)
+    ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
+    ->RangeMultiplier(2)
+    ->Range(1, std::thread::hardware_concurrency());
+
 static void BM_size_no_reserve_full_trans_8(benchmark::State& state) {
   while (state.KeepRunning()) {
     std::vector<Element*> gens
@@ -3979,6 +4014,39 @@ BENCHMARK(BM_size_reserve_nat_mat)
     ->Unit(benchmark::kMillisecond)
     ->Repetitions(1)
     ->UseManualTime();
+
+static void BM_nridempotents_nat_mat(benchmark::State& state) {
+  while (state.KeepRunning()) {
+    Semiring*             sr = new NaturalSemiring(0, 6);
+    std::vector<Element*> gens
+        = {new MatrixOverSemiring({{0, 0, 1}, {0, 1, 0}, {1, 1, 0}}, sr),
+           new MatrixOverSemiring({{0, 0, 1}, {0, 1, 0}, {2, 0, 0}}, sr),
+           new MatrixOverSemiring({{0, 0, 1}, {0, 1, 1}, {1, 0, 0}}, sr),
+           new MatrixOverSemiring({{0, 0, 1}, {0, 1, 0}, {3, 0, 0}}, sr)};
+    Semigroup S = Semigroup(gens);
+    really_delete_cont(gens);
+
+    S.reserve(10077696);
+    S.enumerate();
+    S.set_max_threads(state.range(0));
+
+    auto start = std::chrono::high_resolution_clock::now();
+    S.nridempotents();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds
+        = std::chrono::duration_cast<std::chrono::duration<double>>(end
+                                                                    - start);
+    state.SetIterationTime(elapsed_seconds.count());
+    delete sr;
+  }
+}
+
+BENCHMARK(BM_nridempotents_nat_mat)
+    ->Unit(benchmark::kMillisecond)
+    ->Repetitions(1)
+    ->UseManualTime()
+    ->RangeMultiplier(2)
+    ->Range(1, std::thread::hardware_concurrency());
 
 static void BM_size_no_reserve_full_pbr_2(benchmark::State& state) {
   while (state.KeepRunning()) {
