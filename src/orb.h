@@ -32,69 +32,77 @@
 
 namespace libsemigroups {
 
-  template <typename ElementType, typename PointType> class Orb {
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher,
+            typename Equaliser>
+  class Orb {
    public:
-    Orb(std::vector<ElementType*> gens, PointType seed)
-        : _gens(gens), _orb({seed}), _map({std::make_pair(seed, 0)}) {
-       _gen({nullptr}),
-       _parent({-1}) {
+    typedef std::function<void(ElementType*, PointType*, PointType*)> Action;
+
+    Orb(std::vector<ElementType*> gens, PointType* seed, Action act)
+        : _act(act),
+          _gens(gens),
+          _map({std::make_pair(seed, 0)}),
+          _orb({seed}),
+          _tmp_point(new PointType()) {
       LIBSEMIGROUPS_ASSERT(!gens.empty());
     }
 
-    ~Orb();
+    ~Orb() {}
 
     void enumerate() {
       for (size_t i = 0; i < _orb.size(); i++) {
-        for (ElementType const* x : _gens) {
-          PointType pt = (*x)[_orb[i]];
-          if (_map.find(pt) == _map.end()) {
+        for (ElementType* x : _gens) {
+          _act(x, _orb[i], _tmp_point);
+          if (_map.find(_tmp_point) == _map.end()) {
+            PointType* pt = new PointType(*_tmp_point);
             _map.insert(std::make_pair(pt, _orb.size()));
             _orb.push_back(pt);
-            _gen.push_back(x);
-            _parent.push_back(i);
           }
         }
       }
     }
 
-    // TODO change the name to find
-    size_t position(PointType pt) {
-      auto it = _map.find(pt);
-      if (it != _map.end()) {
-        return (*it).second;
-      } else {
-        return -1;
-      }
-    }
+    /*    // TODO change the name to find
+        size_t position(PointType pt) {
+          auto it = _map.find(pt);
+          if (it != _map.end()) {
+            return (*it).second;
+          } else {
+            return -1;
+          }
+        }
 
-    void reserve(size_t n) {
-      _map.reserve(n);
-      _orb.reserve(n);
-      _gen.reserve(n);
-    }
+        void reserve(size_t n) {
+          _map.reserve(n);
+          _orb.reserve(n);
+          _gen.reserve(n);
+        }
 
-    inline PointType operator[](size_t pos) const {
-      assert(pos < _orb.size());
-      return _orb[pos];
-    }
+        inline PointType operator[](size_t pos) const {
+          assert(pos < _orb.size());
+          return _orb[pos];
+        }
 
-    inline PointType at(size_t pos) const {
-      return _orb.at(pos);
-    }
+        inline PointType at(size_t pos) const {
+          return _orb.at(pos);
+        }*/
 
     size_t size() {
+      enumerate();
       return _orb.size();
     }
 
    private:
+    Action                    _act;
     std::vector<ElementType*> _gens;
-    std::unordered_map<PointType, size_t> _map;
-    std::vector<PointType>    _orb;
+    std::unordered_map<PointType*, size_t, Hasher, Equaliser> _map;
+    std::vector<PointType*> _orb;
+
     std::vector<ElementType*> _gen;
     std::vector<size_t>       _parent;
-    std::vector<ElementType*> _mappers;
-    static ElementType*       _tmp
-        = new Permutation<PointType>(new std::vector<PointType>());
+    PointType*                _tmp_point;
   };
 }  // namespace libsemigroups
 
