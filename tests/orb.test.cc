@@ -26,41 +26,4 @@ using namespace libsemigroups;
 TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
   std::vector<Element*> gens = {new Permutation<u_int16_t>({1, 0, 2}),
                                 new Permutation<u_int16_t>({1, 2, 0})};
-  Semigroup S = Semigroup(gens);
-  S.set_report(SEMIGROUPS_REPORT);
-  really_delete_cont(gens);
-
-  REQUIRE(S.size() == 2);
-  REQUIRE(S.degree() == 3);
-  REQUIRE(S.nridempotents() == 2);
-  REQUIRE(S.nrgens() == 2);
-  REQUIRE(S.nrrules() == 4);
-
-  Element* expected = new Transformation<u_int16_t>({0, 1, 0});
-  REQUIRE(*S[0] == *expected);
-  expected->really_delete();
-  delete expected;
-
-  expected = new Transformation<u_int16_t>({0, 1, 2});
-  REQUIRE(*S[1] == *expected);
-  expected->really_delete();
-  delete expected;
-
-  Element* x = new Transformation<u_int16_t>({0, 1, 0});
-  REQUIRE(S.position(x) == 0);
-  REQUIRE(S.test_membership(x));
-  x->really_delete();
-  delete x;
-
-  x = new Transformation<u_int16_t>({0, 1, 2});
-  REQUIRE(S.position(x) == 1);
-  REQUIRE(S.test_membership(x));
-  x->really_delete();
-  delete x;
-
-  x = new Transformation<u_int16_t>({0, 0, 0});
-  REQUIRE(S.position(x) == Semigroup::UNDEFINED);
-  REQUIRE(!S.test_membership(x));
-  x->really_delete();
-  delete x;
 }
