@@ -82,8 +82,10 @@ lstest_SOURCES += tests/cong.test.cc	  tests/rws.test.cc
 lstest_SOURCES += tests/elements.test.cc  tests/rwse.test.cc
 lstest_SOURCES += tests/kbfp.test.cc	  tests/semigroups.test.cc
 lstest_SOURCES += tests/kbp.test.cc       tests/semiring.test.cc
-lstest_SOURCES += tests/p.test.cc         tests/tc.test.cc
-lstest_SOURCES += tests/partition.test.cc tests/uf.test.cc
+lstest_SOURCES += tests/orb.test.cc       tests/tc.test.cc
+lstest_SOURCES += tests/p.test.cc         tests/uf.test.cc
+lstest_SOURCES += tests/partition.test.cc 
+
 
 lstest_CPPFLAGS = -DCONFIG_H $(CODE_COVERAGE_CPPFLAGS)
 lstest_CFLAGS = $(CODE_COVERAGE_CFLAGS) 

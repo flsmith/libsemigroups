@@ -36,8 +36,8 @@ namespace libsemigroups {
    public:
     Orb(std::vector<ElementType*> gens, PointType seed)
         : _gens(gens), _orb({seed}), _map({std::make_pair(seed, 0)}) {
-      // _gen({nullptr}),
-      // _parent({-1}) {
+       _gen({nullptr}),
+       _parent({-1}) {
       LIBSEMIGROUPS_ASSERT(!gens.empty());
     }
 
