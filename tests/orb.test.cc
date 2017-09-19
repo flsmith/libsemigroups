@@ -23,10 +23,9 @@
 
 using namespace libsemigroups;
 
-TEST_CASE("Semigroup 01: small transformation semigroup",
-          "[quick][semigroup][finite][01]") {
-  std::vector<Element*> gens = {new Transformation<u_int16_t>({0, 1, 0}),
-                                new Transformation<u_int16_t>({0, 1, 2})};
+TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
+  std::vector<Element*> gens = {new Permutation<u_int16_t>({1, 0, 2}),
+                                new Permutation<u_int16_t>({1, 2, 0})};
   Semigroup S = Semigroup(gens);
   S.set_report(SEMIGROUPS_REPORT);
   really_delete_cont(gens);

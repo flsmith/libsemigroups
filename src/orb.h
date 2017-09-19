@@ -35,15 +35,10 @@ namespace libsemigroups {
   template <typename ElementType, typename PointType> class Orb {
    public:
     Orb(std::vector<ElementType*> gens, PointType seed)
-        : _gens(gens),
-          _orb({seed}),
-          _map({std::make_pair(seed, 0)}),
-          _gen({nullptr}),
-          _parent({-1}) {
-      assert(!gens.empty());
-      if (_tmp.degree() < _gens[0].degree()) {
-        _tmp.copy(_gens[0]);
-      }
+        : _gens(gens), _orb({seed}), _map({std::make_pair(seed, 0)}) {
+      // _gen({nullptr}),
+      // _parent({-1}) {
+      LIBSEMIGROUPS_ASSERT(!gens.empty());
     }
 
     ~Orb();
@@ -91,22 +86,6 @@ namespace libsemigroups {
       return _orb.size();
     }
 
-    Element const* mapper(size_t pos) {
-      if (pos >= _mappers.size()) {
-        size_t i = pos;
-        assert(i < _orb.size());
-        Element const* out = _gen[i].really_copy();
-        Element const* tmp = out.really_copy();
-        while (out != nullptr) {
-          i = _parent[i];
-          out->redefine(_gen[i], tmp);
-          tmp.copy(out);
-        }
-        _mappers[i] = out;
-      }
-      return _mappers[pos];
-    }
-
    private:
     std::vector<ElementType*> _gens;
     std::unordered_map<PointType, size_t> _map;
@@ -114,8 +93,9 @@ namespace libsemigroups {
     std::vector<ElementType*> _gen;
     std::vector<size_t>       _parent;
     std::vector<ElementType*> _mappers;
-    static ElementType*       _tmp = new Permutation(new std::vector());
+    static ElementType*       _tmp
+        = new Permutation<PointType>(new std::vector<PointType>());
   };
 }  // namespace libsemigroups
 
-#endif  // LIBSEMIGROUPS_SRC_SIMS_H_
+#endif  // LIBSEMIGROUPS_SRC_ORB_H_
