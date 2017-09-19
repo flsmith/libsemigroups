@@ -41,6 +41,7 @@ pkginclude_HEADERS += src/semiring.h
 pkginclude_HEADERS += src/timer.h
 pkginclude_HEADERS += src/uf.h
 
+
 lib_LTLIBRARIES = libsemigroups.la
 
 ## libsemigroups sources
