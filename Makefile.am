@@ -33,6 +33,7 @@ pkginclude_HEADERS += src/rws.h                  src/rwse.h
 pkginclude_HEADERS += src/semiring.h             src/partition.h
 pkginclude_HEADERS += src/recvec.h               src/report.h	
 pkginclude_HEADERS += src/timer.h                src/uf.h
+pkginclude_HEADERS += src/orb.h
 
 lib_LTLIBRARIES = libsemigroups.la
 
