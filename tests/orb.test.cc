@@ -23,21 +23,9 @@
 
 using namespace libsemigroups;
 
-template <typename T> struct Equal {
-  bool operator()(T i, T j) const {
-    return i == j;
-  }
-};
-
 template <typename T> struct VectorEqual {
   bool operator()(std::vector<T>* pt1, std::vector<T>* pt2) const {
     return *pt1 == *pt2;
-  }
-};
-
-template <typename T> struct PointHash {
-  size_t operator()(T i) const {
-    return std::hash<T>()(i);
   }
 };
 
@@ -69,7 +57,7 @@ std::vector<Permutation<u_int16_t>*>* symmetric_group(size_t n) {
   return gens;
 }
 
-TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
+TEST_CASE("Orb 01: symmetric group 3 on points", "[quick][orb][01]") {
   std::vector<Permutation<u_int16_t>*> gens
       = {new Permutation<u_int16_t>({1, 0, 2}),
          new Permutation<u_int16_t>({1, 2, 0})};
@@ -80,16 +68,21 @@ TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
     return (*perm)[pt];
   };
 
-  Orb<Permutation<u_int16_t>, u_int16_t, PointHash<u_int16_t>, Equal<u_int16_t>>
-      o(gens, 0, act);
+  Orb<Permutation<u_int16_t>, u_int16_t> o(gens, 0, act);
   REQUIRE(o.size() == 3);
 }
 
-TEST_CASE("Orb 02: ??", "[quick][orb][02]") {
+TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
+  typedef Permutation<u_int16_t> element_type;
+  typedef std::vector<u_int16_t> point_type;
+  typedef Orb<element_type,
+              point_type*,
+              VectorHash<u_int16_t>,
+              VectorEqual<u_int16_t>>
+      orbit_type;
 
-  auto act = [](Permutation<u_int16_t>*       perm,
-                std::vector<u_int16_t> const* pt,
-                std::vector<u_int16_t>*       tmp) -> std::vector<u_int16_t>* {
+  auto act
+      = [](element_type* perm, point_type* pt, point_type* tmp) -> point_type* {
     tmp->clear();
     tmp->reserve(pt->size());
     for (size_t i = 0; i < pt->size(); ++i) {
@@ -98,16 +91,31 @@ TEST_CASE("Orb 02: ??", "[quick][orb][02]") {
     return tmp;
   };
 
-  auto copier = [](std::vector<u_int16_t>* pt) -> std::vector<u_int16_t>* {
-    return new std::vector<u_int16_t>(*pt);
-  };
+  auto copier
+      = [](point_type* pt) -> point_type* { return new point_type(*pt); };
 
-  std::vector<u_int16_t>* seed = new std::vector<u_int16_t>({0, 1, 2, 3, 4});
+  point_type* seed = new point_type({0, 1, 2, 3});
 
-  Orb<Permutation<u_int16_t>,
-      std::vector<u_int16_t>*,
-      VectorHash<u_int16_t>,
-      VectorEqual<u_int16_t>>
-      o(*symmetric_group(20), seed, act, copier);
-  REQUIRE(o.size() == 1860480);
+  orbit_type o(*symmetric_group(20), seed, act, copier);
+  o.reserve(116280);
+
+  REQUIRE(o.size() == 116280);
+  REQUIRE(o.position(seed) == 0);
+  REQUIRE(*o[0] == *seed);
+  REQUIRE(*o.at(0) == *seed);
+
+  {
+    point_type* pt = new point_type({9, 0, 2, 19});
+    REQUIRE(o.position(pt) != orbit_type::UNDEFINED);
+    REQUIRE(o.position(pt) == 25295);
+    REQUIRE(*o[25295] == *pt);
+    REQUIRE(*o.at(25295) == *pt);
+    delete pt;
+  }
+
+  {
+    point_type* pt = new point_type({0});
+    REQUIRE(o.position(pt) == orbit_type::UNDEFINED);
+    delete pt;
+  }
 }

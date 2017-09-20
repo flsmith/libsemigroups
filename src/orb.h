@@ -31,25 +31,35 @@
 #include "timer.h"
 
 namespace libsemigroups {
+  namespace internal {
+    template <typename T> struct Equal {
+      bool operator()(T i, T j) const {
+        return i == j;
+      }
+    };
+    template <typename T> struct Hash {
+      size_t operator()(T i) const {
+        return std::hash<T>()(i);
+      }
+    };
+  }  // namespace internal
 
   template <typename ElementType,
             typename PointType,
-            typename Hasher,
-            typename Equaliser>
+            typename Hasher    = internal::Hash<PointType>,
+            typename Equaliser = internal::Equal<PointType>>
   class Orb {
    public:
     typedef std::function<PointType(ElementType*, PointType, PointType)>
                                                 action_type;
     typedef std::function<PointType(PointType)> copier_type;
-    typedef PointType                           point_type;
-    typedef ElementType                         element_type;
 
-    Orb() { }
+    static const size_t UNDEFINED;
 
     Orb(std::vector<ElementType*> gens,
         PointType                 seed,
-        action_type                    act,
-        copier_type                    copier = default_copier)
+        action_type               act,
+        copier_type               copier = default_reference_copier)
         : _act(act),
           _copier(copier),
           _gens(gens),
@@ -69,48 +79,69 @@ namespace libsemigroups {
             PointType pt = _copier(_tmp_point);
             _map.insert(std::make_pair(pt, _orb.size()));
             _orb.push_back(pt);
+            _gen.push_back(x);
+            _parent.push_back(i);
           }
         }
       }
     }
 
-    /*    // TODO change the name to find
-        size_t position(PointType pt) {
-          auto it = _map.find(pt);
-          if (it != _map.end()) {
-            return (*it).second;
-          } else {
-            return -1;
-          }
-        }
+    size_t position(PointType pt) {
+      auto it = _map.find(pt);
+      if (it != _map.end()) {
+        return (*it).second;
+      } else {
+        return UNDEFINED;
+      }
+    }
 
-        void reserve(size_t n) {
-          _map.reserve(n);
-          _orb.reserve(n);
-          _gen.reserve(n);
-        }
+    typename std::vector<PointType>::const_iterator find(PointType pt) {
+      auto it = _map.find(pt);
+      if (it != _map.end()) {
+        return _orb.cbegin() + (*it).second;
+      } else {
+        return _orb.cend();
+      }
+    }
 
-        inline PointType operator[](size_t pos) const {
-          assert(pos < _orb.size());
-          return _orb[pos];
-        }
+    void reserve(size_t n) {
+      _map.reserve(n);
+      _orb.reserve(n);
+      _gen.reserve(n);
+      _parent.reserve(n);
+    }
 
-        inline PointType at(size_t pos) const {
-          return _orb.at(pos);
-        }*/
+    inline PointType operator[](size_t pos) const {
+      assert(pos < _orb.size());
+      return _orb[pos];
+    }
+
+    inline PointType at(size_t pos) const {
+      return _orb.at(pos);
+    }
 
     size_t size() {
       enumerate();
       return _orb.size();
     }
 
+    ElementType* mapper(size_t pos) {
+      ElementType* out = _gen[pos]->really_copy();
+      while (pos != 0) {
+        pos = _parent[pos];
+        _tmp_element->redefine(_gen[pos], out);
+        out->swap(_tmp_element);
+      }
+    }
+
    private:
-    static PointType default_copier(PointType pt) {
+    static PointType default_reference_copier(PointType pt) {
       return PointType(pt);
     }
 
-    action_type                    _act;
-    copier_type                    _copier;
+    action_type _act;
+    copier_type _copier;
+
     std::vector<ElementType*> _gens;
     std::unordered_map<PointType, size_t, Hasher, Equaliser> _map;
     std::vector<PointType> _orb;
@@ -118,7 +149,15 @@ namespace libsemigroups {
     std::vector<ElementType*> _gen;
     std::vector<size_t>       _parent;
     PointType                 _tmp_point;
+    ElementType*              _tmp_element;
   };
+
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher,
+            typename Equaliser>
+  size_t const Orb<ElementType, PointType, Hasher, Equaliser>::UNDEFINED
+      = std::numeric_limits<size_t>::max();
 }  // namespace libsemigroups
 
 #endif  // LIBSEMIGROUPS_SRC_ORB_H_
