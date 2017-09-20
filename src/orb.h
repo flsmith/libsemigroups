@@ -38,14 +38,24 @@ namespace libsemigroups {
             typename Equaliser>
   class Orb {
    public:
-    typedef std::function<void(ElementType*, PointType*, PointType*)> Action;
+    typedef std::function<PointType(ElementType*, PointType, PointType)>
+                                                action_type;
+    typedef std::function<PointType(PointType)> copier_type;
+    typedef PointType                           point_type;
+    typedef ElementType                         element_type;
 
-    Orb(std::vector<ElementType*> gens, PointType* seed, Action act)
+    Orb() { }
+
+    Orb(std::vector<ElementType*> gens,
+        PointType                 seed,
+        action_type                    act,
+        copier_type                    copier = default_copier)
         : _act(act),
+          _copier(copier),
           _gens(gens),
           _map({std::make_pair(seed, 0)}),
           _orb({seed}),
-          _tmp_point(new PointType()) {
+          _tmp_point(copier(seed)) {
       LIBSEMIGROUPS_ASSERT(!gens.empty());
     }
 
@@ -54,9 +64,9 @@ namespace libsemigroups {
     void enumerate() {
       for (size_t i = 0; i < _orb.size(); i++) {
         for (ElementType* x : _gens) {
-          _act(x, _orb[i], _tmp_point);
+          _tmp_point = _act(x, _orb[i], _tmp_point);
           if (_map.find(_tmp_point) == _map.end()) {
-            PointType* pt = new PointType(*_tmp_point);
+            PointType pt = _copier(_tmp_point);
             _map.insert(std::make_pair(pt, _orb.size()));
             _orb.push_back(pt);
           }
@@ -95,14 +105,19 @@ namespace libsemigroups {
     }
 
    private:
-    Action                    _act;
+    static PointType default_copier(PointType pt) {
+      return PointType(pt);
+    }
+
+    action_type                    _act;
+    copier_type                    _copier;
     std::vector<ElementType*> _gens;
-    std::unordered_map<PointType*, size_t, Hasher, Equaliser> _map;
-    std::vector<PointType*> _orb;
+    std::unordered_map<PointType, size_t, Hasher, Equaliser> _map;
+    std::vector<PointType> _orb;
 
     std::vector<ElementType*> _gen;
     std::vector<size_t>       _parent;
-    PointType*                _tmp_point;
+    PointType                 _tmp_point;
   };
 }  // namespace libsemigroups
 
