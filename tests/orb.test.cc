@@ -69,37 +69,45 @@ std::vector<Permutation<u_int16_t>*>* symmetric_group(size_t n) {
   return gens;
 }
 
-/*TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
+TEST_CASE("Orb 01: ??", "[quick][orb][01]") {
   std::vector<Permutation<u_int16_t>*> gens
       = {new Permutation<u_int16_t>({1, 0, 2}),
          new Permutation<u_int16_t>({1, 2, 0})};
 
-  auto act = [] (Permutation<u_int16_t>* perm, u_int16_t pt) -> u_int16_t {
+  auto act = [](
+      Permutation<u_int16_t>* perm, u_int16_t pt, u_int16_t tmp) -> u_int16_t {
+    (void) tmp;
     return (*perm)[pt];
   };
 
   Orb<Permutation<u_int16_t>, u_int16_t, PointHash<u_int16_t>, Equal<u_int16_t>>
       o(gens, 0, act);
   REQUIRE(o.size() == 3);
-}*/
+}
 
 TEST_CASE("Orb 02: ??", "[quick][orb][02]") {
+
   auto act = [](Permutation<u_int16_t>*       perm,
                 std::vector<u_int16_t> const* pt,
-                std::vector<u_int16_t>*       tmp) -> void {
+                std::vector<u_int16_t>*       tmp) -> std::vector<u_int16_t>* {
     tmp->clear();
     tmp->reserve(pt->size());
     for (size_t i = 0; i < pt->size(); ++i) {
       tmp->push_back((*perm)[(*pt)[i]]);
     }
+    return tmp;
+  };
+
+  auto copier = [](std::vector<u_int16_t>* pt) -> std::vector<u_int16_t>* {
+    return new std::vector<u_int16_t>(*pt);
   };
 
   std::vector<u_int16_t>* seed = new std::vector<u_int16_t>({0, 1, 2, 3, 4});
 
   Orb<Permutation<u_int16_t>,
-      std::vector<u_int16_t>,
+      std::vector<u_int16_t>*,
       VectorHash<u_int16_t>,
       VectorEqual<u_int16_t>>
-      o(*symmetric_group(20), seed, act);
+      o(*symmetric_group(20), seed, act, copier);
   REQUIRE(o.size() == 1860480);
 }
