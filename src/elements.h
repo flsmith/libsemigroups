@@ -414,12 +414,6 @@ namespace libsemigroups {
       std::swap(this->_hash_value, xx->_hash_value);
     }
 
-    void swap(Element* x) override {
-      LIBSEMIGROUPS_ASSERT(x->degree() == this->degree());
-      ElementWithVectorData* xx = static_cast<ElementWithVectorData*>(x);
-      _vector->swap(*(xx->_vector));
-    }
-
     //! Deletes the defining data of an ElementWithVectorData.
     void really_delete() override {
       delete _vector;
