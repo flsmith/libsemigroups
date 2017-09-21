@@ -95,15 +95,15 @@ TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
       = [](point_type* pt) -> point_type* { return new point_type(*pt); };
 
   point_type* seed = new point_type({0, 1, 2, 3});
-
-  orbit_type o(*symmetric_group(20), seed, act, copier);
+  std::vector<element_type*>* gens = symmetric_group(20);
+  orbit_type o(*gens, seed, act, copier);
   o.reserve(116280);
 
   REQUIRE(o.size() == 116280);
   REQUIRE(o.position(seed) == 0);
   REQUIRE(*o[0] == *seed);
   REQUIRE(*o.at(0) == *seed);
-
+  
   {
     point_type* pt = new point_type({9, 0, 2, 19});
     REQUIRE(o.position(pt) != orbit_type::UNDEFINED);
@@ -112,7 +112,18 @@ TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
     REQUIRE(*o.at(25295) == *pt);
     delete pt;
   }
-
+  
+  {  
+    point_type* pt = new point_type({9, 0, 2, 19});
+    element_type* mapper = o.mapper(1);
+    point_type* tmp_element = new point_type({0, 0, 0, 0});
+    REQUIRE(*o.at(1) == *act(mapper, seed, tmp_element));
+    mapper = o.mapper(25295);
+    REQUIRE(*act(mapper, seed, tmp_element) == *pt); 
+    delete mapper;
+    delete tmp_element;
+  }
+  
   {
     point_type* pt = new point_type({0});
     REQUIRE(o.position(pt) == orbit_type::UNDEFINED);
