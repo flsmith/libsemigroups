@@ -65,10 +65,10 @@ namespace libsemigroups {
           _gens(gens),
           _map({std::make_pair(seed, 0)}),
           _orb({seed}),
-          _tmp_point(copier(seed)) {
+          _tmp_point(copier(seed)){
       LIBSEMIGROUPS_ASSERT(!gens.empty());
+      _tmp_element = static_cast<ElementType*>(_gens[0]->really_copy());
     }
-
     ~Orb() {}
 
     void enumerate() {
@@ -126,12 +126,15 @@ namespace libsemigroups {
     }
 
     ElementType* mapper(size_t pos) {
-      ElementType* out = _gen[pos]->really_copy();
+      --pos;
+      ElementType* out = static_cast<ElementType*>(_gen[pos]->really_copy());
+      pos = _parent[pos];
       while (pos != 0) {
-        pos = _parent[pos];
-        _tmp_element->redefine(_gen[pos], out);
+        _tmp_element->redefine(_gen[pos-1], out);
         out->swap(_tmp_element);
-      }
+        pos = _parent[pos-1];
+      } 
+      return out;
     }
 
    private:
