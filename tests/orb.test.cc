@@ -39,11 +39,9 @@ template <typename T> struct VectorHash {
   }
 };
 
-std::vector<Permutation<u_int16_t>*>* symmetric_group(size_t n) {
-
-  std::vector<Permutation<u_int16_t>*>* gens
-      = new std::vector<Permutation<u_int16_t>*>();
-
+// FIXME fails for small values of n
+template <class TElementType>
+std::vector<TElementType*>* symmetric_group(size_t n) {
   std::vector<u_int16_t> a = {1, 0}, b;
   for (size_t i = 2; i < n; ++i) {
     a.push_back(i);
@@ -52,8 +50,20 @@ std::vector<Permutation<u_int16_t>*>* symmetric_group(size_t n) {
     b.push_back(i);
   }
   b.push_back(0);
-  gens->push_back(new Permutation<u_int16_t>(a));
-  gens->push_back(new Permutation<u_int16_t>(b));
+  return new std::vector<TElementType*>(
+      {new TElementType(a), new TElementType(b)});
+}
+
+// FIXME fails for small values of n
+std::vector<Transformation<u_int16_t>*>* full_trans_monoid(size_t n) {
+  std::vector<Transformation<u_int16_t>*>* gens
+      = symmetric_group<Transformation<u_int16_t>>(n);
+
+  std::vector<u_int16_t> c = {0};
+  for (size_t i = 0; i < n - 1; ++i) {
+    c.push_back(i);
+  }
+  gens->push_back(new Transformation<u_int16_t>(c));
   return gens;
 }
 
@@ -94,8 +104,9 @@ TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
   auto copier
       = [](point_type* pt) -> point_type* { return new point_type(*pt); };
 
-  point_type* seed = new point_type({0, 1, 2, 3});
-  std::vector<element_type*>* gens = symmetric_group(20);
+  point_type*                 seed = new point_type({0, 1, 2, 3});
+  std::vector<element_type*>* gens
+      = symmetric_group<Permutation<u_int16_t>>(20);
   orbit_type o(*gens, seed, act, copier);
   o.reserve(116280);
 
@@ -103,7 +114,7 @@ TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
   REQUIRE(o.position(seed) == 0);
   REQUIRE(*o[0] == *seed);
   REQUIRE(*o.at(0) == *seed);
-  
+
   {
     point_type* pt = new point_type({9, 0, 2, 19});
     REQUIRE(o.position(pt) != orbit_type::UNDEFINED);
@@ -112,21 +123,49 @@ TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
     REQUIRE(*o.at(25295) == *pt);
     delete pt;
   }
-  
-  {  
-    point_type* pt = new point_type({9, 0, 2, 19});
-    element_type* mapper = o.mapper(1);
-    point_type* tmp_element = new point_type({0, 0, 0, 0});
+
+  {
+    point_type*   pt          = new point_type({9, 0, 2, 19});
+    element_type* mapper      = o.mapper(1);
+    point_type*   tmp_element = new point_type({0, 0, 0, 0});
     REQUIRE(*o.at(1) == *act(mapper, seed, tmp_element));
     mapper = o.mapper(25295);
-    REQUIRE(*act(mapper, seed, tmp_element) == *pt); 
+    REQUIRE(*act(mapper, seed, tmp_element) == *pt);
     delete mapper;
     delete tmp_element;
   }
-  
+
   {
     point_type* pt = new point_type({0});
     REQUIRE(o.position(pt) == orbit_type::UNDEFINED);
     delete pt;
   }
+}
+
+TEST_CASE("Orb 03: full transformation monoid lvalue orbit",
+          "[quick][orb][03]") {
+  typedef Transformation<u_int16_t> element_type;
+  typedef std::vector<u_int16_t>    point_type;
+  typedef Orb<element_type,
+              point_type*,
+              VectorHash<u_int16_t>,
+              VectorEqual<u_int16_t>>
+      orbit_type;
+
+  auto act
+      = [](element_type* t, point_type* pt, point_type* tmp) -> point_type* {
+    return t->lvalue(pt, tmp);
+  };
+
+  auto copier
+      = [](point_type* pt) -> point_type* { return new point_type(*pt); };
+
+  orbit_type o(*full_trans_monoid(23),
+               new point_type({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                               12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}),
+               act,
+               copier);
+  o.reserve(std::pow(2, 24));
+
+  REQUIRE(o.size() == std::pow(2, 23) - 1);
 }

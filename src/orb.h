@@ -62,13 +62,16 @@ namespace libsemigroups {
         copier_type               copier = default_reference_copier)
         : _act(act),
           _copier(copier),
+          _gen({nullptr}),
           _gens(gens),
           _map({std::make_pair(seed, 0)}),
           _orb({seed}),
-          _tmp_point(copier(seed)){
+          _parent({UNDEFINED}),
+          _tmp_point(copier(seed)) {
       LIBSEMIGROUPS_ASSERT(!gens.empty());
       _tmp_element = static_cast<ElementType*>(_gens[0]->really_copy());
     }
+
     ~Orb() {}
 
     void enumerate() {
@@ -126,14 +129,13 @@ namespace libsemigroups {
     }
 
     ElementType* mapper(size_t pos) {
-      --pos;
       ElementType* out = static_cast<ElementType*>(_gen[pos]->really_copy());
-      pos = _parent[pos];
+      pos              = _parent[pos];
       while (pos != 0) {
-        _tmp_element->redefine(_gen[pos-1], out);
+        _tmp_element->redefine(_gen[pos], out);
         out->swap(_tmp_element);
-        pos = _parent[pos-1];
-      } 
+        pos = _parent[pos];
+      }
       return out;
     }
 
@@ -145,14 +147,14 @@ namespace libsemigroups {
     action_type _act;
     copier_type _copier;
 
+    std::vector<ElementType*> _gen;
     std::vector<ElementType*> _gens;
     std::unordered_map<PointType, size_t, Hasher, Equaliser> _map;
     std::vector<PointType> _orb;
 
-    std::vector<ElementType*> _gen;
-    std::vector<size_t>       _parent;
-    PointType                 _tmp_point;
-    ElementType*              _tmp_element;
+    std::vector<size_t> _parent;
+    ElementType*        _tmp_element;
+    PointType           _tmp_point;
   };
 
   template <typename ElementType,
