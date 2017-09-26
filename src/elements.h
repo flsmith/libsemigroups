@@ -494,6 +494,16 @@ namespace libsemigroups {
     }
   };
 
+  template <typename TValueType, typename TSubclass, typename TLType>
+  class LRValueElement
+      : public ElementWithVectorDataDefaultHash<TValueType, TSubclass> {
+    using ElementWithVectorDataDefaultHash<TValueType, TSubclass>::
+        ElementWithVectorDataDefaultHash;
+
+   public:
+    virtual TLType lvalue(TLType x, TLType tmp) = 0;
+  };
+
   //! Abstract class for partial transformations.
   //!
   //! This is a template class for partial transformations, which is a subclass
@@ -526,10 +536,10 @@ namespace libsemigroups {
   //! the points where \f$f\f$ is defined).
   template <typename TValueType, typename TSubclass>
   class PartialTransformation
-      : public ElementWithVectorDataDefaultHash<TValueType, TSubclass> {
+      : public LRValueElement<TValueType, TSubclass, std::vector<TValueType>*> {
    public:
-    using ElementWithVectorDataDefaultHash<TValueType, TSubclass>::
-        ElementWithVectorDataDefaultHash;
+    typedef std::vector<TValueType>* lvalue_type;
+    using LRValueElement<TValueType, TSubclass, lvalue_type>::LRValueElement;
 
     //! Returns the approximate time complexity of multiplying two
     //! partial transformations.
@@ -579,6 +589,39 @@ namespace libsemigroups {
         vector->push_back(i);
       }
       return new TSubclass(vector);
+    }
+
+    typedef std::vector<TValueType> const* const_lvalue_type;
+
+    lvalue_type lvalue(lvalue_type x, lvalue_type tmp) override {
+      size_t const deg = this->degree();
+
+      this->_lookup.clear();
+      this->_lookup.resize(deg, false);
+
+      tmp->clear();
+      tmp->reserve(deg);
+
+      // size_t r = 0;
+      for (auto const& i : *x) {
+        size_t j = (*this->_vector)[i];
+        if (!(this->_lookup[j]) && j != UNDEFINED) {
+          this->_lookup[j] = true;
+          // r++;
+          tmp->push_back(j);
+        }
+      }
+      std::sort(tmp->begin(), tmp->end());
+
+      /*
+       tmp->clear();
+      tmp->reserve(r);
+      for (size_t i = 0; i < deg && tmp->size() < r; ++i) {
+        if (this->_lookup[i]) {
+          tmp->push_back(i);
+        }
+      }*/
+      return tmp;
     }
 
     //! Undefined image value.
