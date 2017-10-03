@@ -160,12 +160,37 @@ TEST_CASE("Orb 03: full transformation monoid lvalue orbit",
   auto copier
       = [](point_type* pt) -> point_type* { return new point_type(*pt); };
 
-  orbit_type o(*full_trans_monoid(23),
-               new point_type({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                               12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}),
+  orbit_type o(*full_trans_monoid(20),
+               new point_type({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                               10, 11, 12, 13, 14, 15, 16, 17, 18, 19}),
                act,
                copier);
-  o.reserve(std::pow(2, 24));
+  o.reserve(std::pow(2, 21));
 
-  REQUIRE(o.size() == std::pow(2, 23) - 1);
+  REQUIRE(o.size() == std::pow(2, 20) - 1);
+}
+
+TEST_CASE("Orb 04: full transformation monoid lvalue graded orbit",
+          "[quick][orb][04]") {
+  typedef Transformation<u_int16_t> element_type;
+  typedef std::vector<u_int16_t>    point_type;
+  typedef GradedOrb<element_type,
+                    point_type*,
+                    VectorHash<u_int16_t>,
+                    VectorEqual<u_int16_t>>
+      orbit_type;
+
+  auto act
+      = [](element_type* t, point_type* pt, point_type* tmp) -> point_type* {
+    return t->lvalue(pt, tmp);
+  };
+
+  auto copier
+      = [](point_type* pt) -> point_type* { return new point_type(*pt); };
+
+  auto grader = [](point_type* pt) -> size_t { return pt->size(); };
+
+  orbit_type o(*full_trans_monoid(20), act, copier, grader);
+  o.enumerate(new point_type({0, 1, 2, 3, 4}));
+  REQUIRE(o.size() == 15504);
 }
