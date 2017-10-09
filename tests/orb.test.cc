@@ -85,7 +85,7 @@ TEST_CASE("Orb 01: symmetric group 3 on points", "[quick][orb][01]") {
 TEST_CASE("Orb 02: symmetric group 20 on 4-tuples", "[quick][orb][02]") {
   typedef Permutation<u_int16_t> element_type;
   typedef std::vector<u_int16_t> point_type;
-  typedef Orb<element_type,
+  typedef OrbWithTree<element_type,
               point_type*,
               VectorHash<u_int16_t>,
               VectorEqual<u_int16_t>>
@@ -146,7 +146,7 @@ TEST_CASE("Orb 03: full transformation monoid lvalue orbit",
           "[quick][orb][03]") {
   typedef Transformation<u_int16_t> element_type;
   typedef std::vector<u_int16_t>    point_type;
-  typedef Orb<element_type,
+  typedef OrbWithTree<element_type,
               point_type*,
               VectorHash<u_int16_t>,
               VectorEqual<u_int16_t>>
@@ -191,6 +191,69 @@ TEST_CASE("Orb 04: full transformation monoid lvalue graded orbit",
   auto grader = [](point_type* pt) -> size_t { return pt->size(); };
 
   orbit_type o(*full_trans_monoid(20), act, copier, grader);
-  o.enumerate(new point_type({0, 1, 2, 3, 4}));
+  o.add_seed(new point_type({0, 1, 2, 3, 4}));
+  o.enumerate();
   REQUIRE(o.size() == 15504);
+}
+
+TEST_CASE("Orb 05: full transformation monoid lvalue graded orbits",
+          "[quick][orb][05]") {
+  typedef Transformation<u_int16_t> element_type;
+  typedef std::vector<u_int16_t>    point_type;
+  typedef GradedOrbs<element_type,
+                    point_type*,
+                    VectorHash<u_int16_t>,
+                    VectorEqual<u_int16_t>>
+      orbit_type;
+
+  auto act
+      = [](element_type* t, point_type* pt, point_type* tmp) -> point_type* {
+    return t->lvalue(pt, tmp);
+  };
+
+  auto copier
+      = [](point_type* pt) -> point_type* { return new point_type(*pt); };
+
+  auto grader = [](point_type* pt) -> size_t { return pt->size(); };
+
+  orbit_type o(*full_trans_monoid(20),
+               new point_type({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                               10, 11, 12, 13, 14, 15, 16, 17, 18, 19}),
+               act,
+               copier,
+               grader);
+  o.add_seed(new point_type({0, 1, 2, 3, 4}));
+  REQUIRE(o.current_size() == 15504);
+  o.add_seed(new point_type({0, 1, 2, 3, 4}));
+  REQUIRE(o.current_size() == 15504);
+  o.add_seed(new point_type({0, 1, 2, 3, 4, 5}));
+  REQUIRE(o.current_size() == 54264);
+
+  o.enumerate();
+  REQUIRE(o.current_size() == 1048575);
+}
+
+TEST_CASE("Orb 06: full transformation monoid lvalue orbit",
+          "[quick][orb][06]") {
+  typedef Transformation<u_int16_t> element_type;
+  typedef std::vector<u_int16_t>    point_type;
+  typedef Orb<element_type,
+                    point_type*,
+                    VectorHash<u_int16_t>,
+                    VectorEqual<u_int16_t>>
+      orbit_type;
+
+  auto act
+      = [](element_type* t, point_type* pt, point_type* tmp) -> point_type* {
+    return t->lvalue(pt, tmp);
+  };
+
+  auto copier
+      = [](point_type* pt) -> point_type* { return new point_type(*pt); };
+
+  orbit_type o(*full_trans_monoid(20), act, copier);
+  o.add_seed(new point_type({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                               10, 11, 12, 13, 14, 15, 16, 17, 18, 19}));
+  o.enumerate();
+  REQUIRE(o.size() == 1048575);
 }

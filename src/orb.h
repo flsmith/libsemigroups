@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -62,11 +63,9 @@ namespace libsemigroups {
         : _act(act),
           _copier(copier),
           _enumerated(false),
-          _gen(),
           _gens(gens),
           _map(),
-          _orb(),
-          _parent() {
+          _orb() {
       LIBSEMIGROUPS_ASSERT(!gens.empty());
       _tmp_element = static_cast<ElementType*>(_gens[0]->really_copy());
     }
@@ -79,20 +78,20 @@ namespace libsemigroups {
       add_seed(seed);
     }
 
-    ~Orb() {  // TODO delete pts it they are pointers
+    virtual ~Orb() {  // TODO delete pts it they are pointers
     }
 
     // Returns the position the seed was added at.
-    size_t add_seed(PointType seed) {
-      LIBSEMIGROUPS_ASSERT(empty() || is_done());
-      LIBSEMIGROUPS_ASSERT(_map.find(seed) == _map.end());
-      _tmp_point = _copier(seed);
-      _gen.push_back(nullptr);
-      _map.emplace(std::make_pair(seed, 0));
-      _orb.push_back(seed);
-      _parent.push_back(UNDEFINED);
-      _enumerated = false;
-      return _orb.size() - 1;
+    virtual size_t add_seed(PointType seed) {
+      //LIBSEMIGROUPS_ASSERT(empty() || is_done());
+      if (_map.find(seed) == _map.end()) {
+        _tmp_point = _copier(seed);
+        _map.emplace(std::make_pair(seed, _orb.size()));
+        _orb.push_back(seed);
+        _enumerated = false;
+        return _orb.size() - 1;
+      }
+      return UNDEFINED;
     }
 
     void enumerate() {
@@ -102,12 +101,8 @@ namespace libsemigroups {
       for (size_t i = 0; i < _orb.size(); i++) {
         for (ElementType* x : _gens) {
           _tmp_point = _act(x, _orb[i], _tmp_point);
-          if (_map.find(_tmp_point) == _map.end()) {
-            PointType pt = _copier(_tmp_point);
-            _map.insert(std::make_pair(pt, _orb.size()));
-            _orb.push_back(pt);
-            _gen.push_back(x);
-            _parent.push_back(i);
+          if (is_new_point()) {
+            process_new_point(x, i);
           }
         }
       }
@@ -136,11 +131,9 @@ namespace libsemigroups {
       }
     }
 
-    void reserve(size_t n) {
+    virtual void reserve(size_t n) {
       _map.reserve(n);
       _orb.reserve(n);
-      _gen.reserve(n);
-      _parent.reserve(n);
     }
 
     bool empty() const {
@@ -161,18 +154,23 @@ namespace libsemigroups {
       return _orb.size();
     }
 
-    ElementType* mapper(size_t pos) {
-      ElementType* out = static_cast<ElementType*>(_gen[pos]->really_copy());
-      pos              = _parent[pos];
-      while (pos != 0) {
-        _tmp_element->redefine(_gen[pos], out);
-        out->swap(_tmp_element);
-        pos = _parent[pos];
-      }
-      return out;
+    size_t current_size() const {
+      return _orb.size();
     }
 
    protected:
+    virtual inline bool is_new_point() {
+      return _map.find(_tmp_point) == _map.end();
+    }
+
+    virtual inline void process_new_point(ElementType* x, size_t i) {
+      (void) x;
+      (void) i;
+      PointType pt = _copier(_tmp_point);
+      _map.insert(std::make_pair(pt, _orb.size()));
+      _orb.push_back(pt);
+    }
+
     static PointType default_reference_copier(PointType pt) {
       return PointType(pt);
     }
@@ -180,55 +178,12 @@ namespace libsemigroups {
     action_type               _act;
     copier_type               _copier;
     bool                      _enumerated;
-    std::vector<ElementType*> _gen;
     std::vector<ElementType*> _gens;
     std::unordered_map<PointType, size_t, Hasher, Equaliser> _map;
     std::vector<PointType> _orb;
 
-    std::vector<size_t> _parent;
-    ElementType*        _tmp_element;
-    PointType           _tmp_point;
-  };
-
-  template <typename ElementType,
-            typename PointType,
-            typename Hasher    = internal::Hash<PointType>,
-            typename Equaliser = internal::Equal<PointType>>
-  class GradedOrb : public Orb<ElementType, PointType, Hasher, Equaliser> {
-   public:
-    typedef Orb<ElementType, PointType, Hasher, Equaliser> orb_base_type;
-    typedef std::function<size_t(PointType)>    grade_type;
-    typedef typename orb_base_type::action_type action_type;
-    typedef typename orb_base_type::copier_type copier_type;
-
-    GradedOrb(std::vector<ElementType*> gens,
-              action_type               act,
-              copier_type               copier,
-              grade_type                grader)
-        : orb_base_type(gens, act, copier), _grader(grader) {}
-
-    void enumerate(PointType seed) {
-      size_t pos   = this->add_seed(seed);
-      size_t grade = _grader(seed);
-      LIBSEMIGROUPS_ASSERT(this->empty() || grade == _grader(this->at(0)));
-      for (size_t i = pos; i < this->_orb.size(); ++i) {
-        for (ElementType* x : this->_gens) {
-          this->_tmp_point = this->_act(x, this->_orb[i], this->_tmp_point);
-          if (_grader(this->_tmp_point) == grade
-              && this->find(this->_tmp_point) == this->_orb.end()) {
-            PointType pt = this->_copier(this->_tmp_point);
-            this->_map.insert(std::make_pair(pt, this->_orb.size()));
-            this->_orb.push_back(pt);
-            this->_gen.push_back(x);
-            this->_parent.push_back(i);
-          }
-        }
-      }
-      this->_enumerated = true;
-    }
-
-   private:
-    grade_type _grader;
+    ElementType* _tmp_element;
+    PointType    _tmp_point;
   };
 
   template <typename ElementType,
@@ -237,6 +192,228 @@ namespace libsemigroups {
             typename Equaliser>
   size_t const Orb<ElementType, PointType, Hasher, Equaliser>::UNDEFINED
       = std::numeric_limits<size_t>::max();
+
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher    = internal::Hash<PointType>,
+            typename Equaliser = internal::Equal<PointType>>
+  class OrbWithTree : public Orb<ElementType, PointType, Hasher, Equaliser> {
+   public:
+    typedef Orb<ElementType, PointType, Hasher, Equaliser> orb_base_type;
+    typedef typename orb_base_type::action_type action_type;
+    typedef typename orb_base_type::copier_type copier_type;
+    using orb_base_type::UNDEFINED;
+
+    OrbWithTree(std::vector<ElementType*> gens,
+                action_type               act,
+                copier_type               copier)
+        : orb_base_type(gens, act, copier), _gen(), _parent() {}
+
+    OrbWithTree(std::vector<ElementType*> gens,
+                PointType                 seed,
+                action_type               act,
+                copier_type               copier)
+        : OrbWithTree(gens, act, copier) {
+      this->add_seed(seed);
+    }
+
+    size_t add_seed(PointType seed) override {
+      size_t out = orb_base_type::add_seed(seed);
+      _gen.push_back(nullptr);
+      _parent.push_back(UNDEFINED);
+      return out;
+    }
+
+    void reserve(size_t n) override {
+      orb_base_type::reserve(n);
+      _gen.reserve(n);
+      _parent.reserve(n);
+    }
+
+    ElementType* mapper(size_t pos) {
+      ElementType* out = static_cast<ElementType*>(_gen[pos]->really_copy());
+      pos              = _parent[pos];
+      while (pos != 0) {
+        this->_tmp_element->redefine(_gen[pos], out);
+        out->swap(this->_tmp_element);
+        pos = _parent[pos];
+      }
+      return out;
+    }
+
+   protected:
+    inline void process_new_point(ElementType* x, size_t i) override {
+      orb_base_type::process_new_point(x, i);
+      _gen.push_back(x);
+      _parent.push_back(i);
+    }
+
+    std::vector<ElementType*> _gen;
+    std::vector<size_t>       _parent;
+  };
+
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher    = internal::Hash<PointType>,
+            typename Equaliser = internal::Equal<PointType>>
+  class GradedOrb
+      : public OrbWithTree<ElementType, PointType, Hasher, Equaliser> {
+   public:
+    typedef OrbWithTree<ElementType, PointType, Hasher, Equaliser>
+                                                orb_base_type;
+    typedef std::function<size_t(PointType)>    grade_type;
+    typedef typename orb_base_type::action_type action_type;
+    typedef typename orb_base_type::copier_type copier_type;
+    using orb_base_type::UNDEFINED;
+
+    GradedOrb(std::vector<ElementType*> gens,
+              action_type               act,
+              copier_type               copier,
+              grade_type                grader)
+        : orb_base_type(gens, act, copier),
+          _grader(grader),
+          _grade(UNDEFINED) {}
+
+    size_t add_seed(PointType seed) override {
+      if (_grade == UNDEFINED || _grader(seed) == _grade) {
+        size_t out = orb_base_type::add_seed(seed);
+        _grade = _grader(seed);
+        return out;
+      }
+      return UNDEFINED;
+    }
+
+    typename std::unordered_set<PointType>::const_iterator
+      begin_low_grade_points() const {
+        return _low_grade_points.cbegin();
+    }
+
+    typename std::unordered_set<PointType>::const_iterator
+      end_low_grade_points() const {
+        return _low_grade_points.cend();
+    }
+
+    void set_grade(size_t val) {
+      _grade = val;
+    }
+
+   private:
+    inline void process_new_point(ElementType* x, size_t i) override {
+      if (_grader(this->_tmp_point) == _grade) {
+        orb_base_type::process_new_point(x, i);
+      } else {
+        LIBSEMIGROUPS_ASSERT(_grader(this->_tmp_point) < _grade);
+        _low_grade_points.insert(this->_copier(this->_tmp_point));
+      }
+    }
+    grade_type _grader;
+    size_t     _grade;
+    std::unordered_set<PointType> _low_grade_points;
+    // TODO keep these in GradedOrbs not here!
+  };
+
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher    = internal::Hash<PointType>,
+            typename Equaliser = internal::Equal<PointType>>
+  class GradedOrbs {
+   public:
+    typedef GradedOrb<ElementType, PointType, Hasher, Equaliser> orb_type;
+    typedef std::function<size_t(PointType)>    grade_type;
+    typedef typename orb_type::action_type action_type;
+    typedef typename orb_type::copier_type copier_type;
+
+    GradedOrbs(std::vector<ElementType*> gens,
+               PointType                 seed,
+               action_type               act,
+               copier_type               copier,
+               grade_type                grader)
+        : _act(act),
+          _copier(copier),
+          _gens(gens),
+          _grader(grader),
+          _seed(seed),
+          _ungraded_orb(gens, act, copier, [this](PointType pt) -> size_t {
+            return (this->position(pt) == UNDEFINED ? 1 : 0);
+          }) {
+          }
+
+    void add_seed(PointType seed) {
+      auto it = _graded_orbs_map.find(_grader(seed));
+      if (it == _graded_orbs_map.end()) {
+        orb_type o(_gens, _act, _copier, _grader);
+        o.add_seed(seed);
+        _graded_orbs_map.insert(std::make_pair(_grader(seed), o));
+      } else if ((*it).second.position(seed) == orb_type::UNDEFINED) {
+        (*it).second.add_seed(seed);
+      }
+    }
+
+    size_t size() {
+      size_t out = 0;
+      for (auto & o : _graded_orbs_map) {
+        out += o.second.size();
+      }
+      enumerate();
+      out += _ungraded_orb.size();
+      return out;
+    }
+
+    size_t current_size() {
+      size_t out = 0;
+      for (auto & o : _graded_orbs_map) {
+        out += o.second.size();
+      }
+      out += _ungraded_orb.current_size();
+      return out;
+    }
+
+    std::pair<size_t, size_t> position(PointType pt) {
+      auto it = _graded_orbs_map.find(_grader(pt));
+      if (it == _graded_orbs_map.end()) {
+        return UNDEFINED;
+      }
+      size_t pos = (*it).second.position(pt);
+      if (pos == orb_type::UNDEFINED) {
+        return UNDEFINED;
+      }
+      return std::make_pair((*it).first, pos);
+    }
+
+    void enumerate() {
+      _ungraded_orb.set_grade(1);
+      _ungraded_orb.add_seed(_seed);
+      for (auto pair : _graded_orbs_map) {
+        for (auto it = pair.second.begin_low_grade_points();
+             it != pair.second.end_low_grade_points();
+             ++it) {
+          _ungraded_orb.add_seed(*it);
+        }
+      }
+      _ungraded_orb.enumerate();
+    }
+
+    static const std::pair<size_t, size_t> UNDEFINED;
+
+   private:
+    action_type               _act;
+    copier_type               _copier;
+    std::vector<ElementType*> _gens;
+    grade_type                _grader;
+    std::unordered_map<size_t, orb_type> _graded_orbs_map;
+    PointType                 _seed;
+    orb_type                  _ungraded_orb;
+  };
+
+  template <typename ElementType,
+            typename PointType,
+            typename Hasher,
+            typename Equaliser>
+  std::pair<size_t, size_t> const
+      GradedOrbs<ElementType, PointType, Hasher, Equaliser>::UNDEFINED
+      = std::make_pair(std::numeric_limits<size_t>::max(),
+                       std::numeric_limits<size_t>::max());
+
 }  // namespace libsemigroups
 
 #endif  // LIBSEMIGROUPS_SRC_ORB_H_
