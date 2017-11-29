@@ -632,16 +632,15 @@ namespace libsemigroups {
 
    private:
 // Used for determining rank
-#ifdef DO_NOT_USE_THREAD_LOCAL
     static std::vector<bool> _lookup;
+#ifdef DO_NOT_USE_THREAD_LOCAL
 #else
-    static thread_local std::vector<bool> _lookup;
 #endif
   };
-
+#ifndef DO_NOT_USE_THREAD_LOCAL
+#endif
   template <typename TValueType, typename TSubclass>
 #ifndef DO_NOT_USE_THREAD_LOCAL
-  thread_local
 #endif
       std::vector<bool>
           PartialTransformation<TValueType, TSubclass>::_lookup
