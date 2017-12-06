@@ -72,7 +72,6 @@ void sort_rows_bmat(uint64_t& bm) {
   }
 }
 
-// https://chessprogramming.wikispaces.com/Flipping+Mirroring+and+Rotating#FlipabouttheAntidiagonal
 
 
 class BooleanMat {
@@ -134,7 +133,8 @@ class BooleanMat {
     sort_rows_bmat(out);
     return BooleanMat(out);
   }
-
+  
+  // Knuth AoCP Vol 4 Fasc 1A Page 13
   BooleanMat transpose() {
     uint64_t x = _data;
     uint64_t y;
@@ -151,6 +151,36 @@ class BooleanMat {
 
     return x;
   }
+
+  //TODO: make this work
+  BooleanMat multiply(BooleanMat bm) {
+    uint64_t y = bm.transpose().get_data();
+    uint64_t x = std::pow(2, 63);
+    uint64_t out = 0;
+    for(uint64_t i = 0; i < 8; ++i) {
+      for(uint64_t j = 0; j < 8; ++j) {
+        out |= (x * ((_data & mask[7-i] & y) > 0));
+        x = x >> 1;
+        cyclic_shift(y);
+        std::cout << BooleanMat(out).to_string() << "\n";
+        //std::cout << mask[7-i] << "\n";
+      }
+    }
+    return BooleanMat(out);
+  }
+
+  // https://stackoverflow.com/a/14582815
+  /*BooleanMat multiply_fast(BooleanMat bm) {
+    uint64_t x = _data;
+    uint64_t y = bm.get_data();
+    BooleanMat out = BooleanMat(0);
+    uint64_t m = 9241421688590303000;
+    for (size_t i = 0; i < 8; ++i){ 
+      x = _data & m 
+      R |= x & y;
+      y = cyclic_shift(y);
+    }
+  } */
 
   uint64_t get_data() {
     return _data;
@@ -201,13 +231,10 @@ int main() {
   std::cout << bm.row_space_basis().to_string() << std::endl;
 */
   
-  BooleanMat bm = BooleanMat({{1, 1, 1, 0}, {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 1}});
+  /*BooleanMat bm = BooleanMat({{1, 1, 1, 0}, {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 1}});
   BooleanMat bmt = BooleanMat({{1, 0, 1, 0}, {1, 1, 0, 1}, {1, 1, 0, 0}, {0, 0, 0, 1}});
-  std::cout << " expect \n" << bmt.to_string() << " got \n" << bm.transpose().to_string();
+  std::cout << " expect \n" << bmt.to_string() << " got \n" << bm.transpose().to_string(); */
   
-
-
-
   /*
   t.start();
   size_t count = 0;
@@ -220,10 +247,11 @@ int main() {
   std::cout << t.elapsed() << std::endl;
   std::cout << count << std::endl;
   */
+ 
   
   t.start();
   size_t count = 0;
-  for (uint64_t data = 0; count < 1000000000; data += 1213122121787439, count++) {
+  for (uint64_t data = 0; count < 1000000000; data += 7, count++) {
     BooleanMat bm = BooleanMat(data);
     bm.transpose();
   }
@@ -231,6 +259,35 @@ int main() {
   t.stop();
   std::cout << t.string() << std::endl;
   std::cout << count << std::endl;
+  
+ 
+  /*
+  t.start();
+  BooleanMat tmp = BooleanMat({{1, 1, 1, 0}, {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 1}});
 
+  size_t count = 0;
+  for (uint64_t data = 0; count < 1000000000; data += 1213122121787439, count++) {
+    BooleanMat bm = BooleanMat(data);
+    bm.multiply(tmp);
+    tmp = bm;
+  }
+
+  t.stop();
+  std::cout << t.string() << std::endl;
+  std::cout << count << std::endl;
+  
+  BooleanMat x =
+      BooleanMat({{1, 1, 1, 0}, {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 1}});
+  BooleanMat y = BooleanMat({{0, 0, 1, 1, 0},
+                             {1, 0, 0, 1, 1},
+                             {1, 0, 1, 0, 0},
+                             {1, 0, 0, 0, 1},
+                             {0, 1, 0, 0, 1}});
+  BooleanMat product = BooleanMat({{1, 0, 1, 1, 1},
+                                   {1, 0, 1, 1, 1},
+                                   {0, 0, 1, 1, 0},
+                                   {1, 0, 0, 1, 1},
+                                   {0, 0, 0, 0, 0}});
+  std::cout << " expect \n" << product.to_string() << " got \n" << x.multiply(y).to_string(); */
   return 0;
 }
