@@ -133,21 +133,75 @@ TEST_CASE("Graph 07: tidy",
   }
 }
 
-TEST_CASE("Graph 08: Strongly connected components",
+TEST_CASE("Graph 08: Strongly connected components - cycles",
           "[quick][graph][08]") {
-  Graph cycle = Graph();
-  
-  for (size_t i = 0; i < 10; ++i) {
-    cycle.add_edge(i, i + 1);
-  }
-  cycle.add_edge(10, 0);
-  cycle.gabow_scc();
-  
-  for (size_t i : cycle.scc_ids()){
-    std::cout << i << std::endl;
+
+  for (size_t j = 2; j < 100; ++j) {
+    Graph cycle = Graph();
+    for (size_t i = 0; i < j; ++i) {
+      cycle.add_edge(i, i + 1);
+    }
+    cycle.add_edge(j, 0);
+    cycle.gabow_scc();
+
+    for (size_t i : cycle.scc_ids()) {
+      REQUIRE(i == 0);
+    }
   }
 }
 
+TEST_CASE("Graph 09: Strongly connected components - no edges",
+          "[quick][graph][09]") {
 
+  Graph graph = Graph();
+  for (size_t j = 2; j < 100; ++j) {
+    graph.add_nodes(j);
+    graph.gabow_scc();
 
+    for (size_t i = 0; i < j; ++i){
+      REQUIRE(graph.scc_ids()[i] == i);
+    }
+  }
+}
 
+TEST_CASE("Graph 10: Strongly connected components - disjoint cycles",
+          "[quick][graph][10]") {
+
+  for (size_t j = 2; j < 50; ++j) {
+    Graph graph = Graph();
+
+    for (size_t k = 0; k < 10; ++k) {
+      graph.add_nodes(j);
+      for (size_t i = k * j; i < (k + 1) * j - 1; ++i) {
+        graph.add_edge(i, i + 1);
+      }
+      graph.add_edge((k + 1) * j - 1, k * j);
+
+      graph.gabow_scc();
+      for (size_t i = 0; i < j; ++i) {
+        REQUIRE(graph.scc_ids()[i] == i/j);
+      }
+    }
+  }
+}
+
+TEST_CASE("Graph 11: Strongly connected components - complete graphs",
+          "[quick][graph][11]") {
+
+  for (size_t k = 2; k < 50; ++k) {
+    Graph graph = Graph();
+    graph.add_nodes(k);
+
+    for (size_t i = 0; i < k; ++i) {
+      for (size_t j = 0; j < k; ++j) {
+        // might as well leave the loops in
+        graph.add_edge(i, j);
+      }
+    }
+
+    graph.gabow_scc();
+    for (size_t i = 0; i < k; ++i) {
+      REQUIRE(graph.scc_ids()[i] == 0);
+    }
+  }
+}

@@ -144,7 +144,7 @@ namespace libsemigroups {
       }
     }
 
-    //for debug only
+    //for debug only. should be removed
     std::vector<size_t> scc_ids(){
       return _cc_ids;
     }
