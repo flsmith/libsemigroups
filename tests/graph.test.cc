@@ -24,29 +24,28 @@
 
 using namespace libsemigroups;
 
-TEST_CASE("Graph 01: Default constructor with 2 default args",
-          "[quick][graph][01]") {
-  Graph g = Graph();
-  REQUIRE(g.nr_rows() == 0);
-  REQUIRE(g.nr_nodes() == 0);
-  REQUIRE(g.nr_cols() == 0);
-  REQUIRE(g.nr_edges() == 0);
-}
-
-TEST_CASE("Graph 02: Default constructor with 1 default arg",
+TEST_CASE("Graph 01: Default constructor with 1 default arg",
           "[quick][graph][02]") {
-  Graph g = Graph(10);
-  REQUIRE(g.nr_nodes() == 0);
-  REQUIRE(g.nr_cols() == 10);
-  REQUIRE(g.nr_edges() == 0);
+
+  for (size_t i = 0; i < 100; ++i) {
+    Graph g = Graph(i);
+    REQUIRE(g.nr_nodes() == 0);
+    REQUIRE(g.nr_cols() == i);
+    REQUIRE(g.nr_edges() == 0);
+  }
 }
 
 TEST_CASE("Graph 03: Default constructor with 0 default args",
           "[quick][graph][03]") {
-  Graph g = Graph(10, 7);
-  REQUIRE(g.nr_nodes() == 7);
-  REQUIRE(g.nr_cols() == 10);
-  REQUIRE(g.nr_edges() == 0);
+
+  for (size_t i = 0; i < 100; ++i) {
+    for (size_t j = 0; j < 100; ++j) {
+      Graph g = Graph(i, j);
+      REQUIRE(g.nr_nodes() == j);
+      REQUIRE(g.nr_cols() == i);
+      REQUIRE(g.nr_edges() == 0);
+    }
+  }
 }
 
 TEST_CASE("Graph 04: add nodes",
@@ -70,7 +69,7 @@ TEST_CASE("Graph 04: add nodes",
 
 TEST_CASE("Graph 05: add edges",
           "[quick][graph][05]") {
-  Graph g = Graph(1,1);
+  Graph g = Graph(30, 17);
  
   for (size_t i = 0; i < 17; ++i){
     for(size_t j = 0; j < 30; ++j){
@@ -89,31 +88,9 @@ TEST_CASE("Graph 05: add edges",
   }
 }
 
-
-TEST_CASE("Graph 06: add edges to empty graph",
-          "[quick][graph][06]") {
-  Graph g = Graph();
-
-  for (size_t i = 0; i < 17; ++i){
-    for(size_t j = 0; j < 30; ++j){
-      g.add_edge(i, (7 * i + 23 * j) % 17);
-    }
-  } 
-  
-  REQUIRE(g.nr_cols() == 30);
-  REQUIRE(g.nr_nodes() == 17);
-  
-  for (size_t i = 0; i < g.nr_nodes(); ++i){
-    for (auto it = g.begin_row(i); it < g.end_row(i); ++it){
-      size_t j = it - g.begin_row(i);
-      REQUIRE(g.get(i, j) == (7 * i + 23 * j) % 17);
-    }   
-  }
-}
-
 TEST_CASE("Graph 07: tidy",
           "[quick][graph][07]"){
-  Graph g = Graph();
+  Graph g = Graph(100, 100);
 
   for (size_t i = 0; i < 100; ++i){
     for(size_t j = 0; j < 100; ++j){
@@ -137,12 +114,12 @@ TEST_CASE("Graph 08: Strongly connected components - cycles",
           "[quick][graph][08]") {
 
   for (size_t j = 2; j < 100; ++j) {
-    Graph cycle = Graph();
+    Graph cycle = Graph(1, j + 1);
     for (size_t i = 0; i < j; ++i) {
       cycle.add_edge(i, i + 1);
     }
     cycle.add_edge(j, 0);
-    cycle.gabow_scc();
+    cycle.gabow_scc_non_recursive_from_digraphs();
 
     for (size_t i : cycle.scc_ids()) {
       REQUIRE(i == 0);
@@ -153,10 +130,10 @@ TEST_CASE("Graph 08: Strongly connected components - cycles",
 TEST_CASE("Graph 09: Strongly connected components - no edges",
           "[quick][graph][09]") {
 
-  Graph graph = Graph();
+  Graph graph = Graph(0);
   for (size_t j = 2; j < 100; ++j) {
     graph.add_nodes(j);
-    graph.gabow_scc();
+    graph.gabow_scc_non_recursive_from_digraphs();
 
     for (size_t i = 0; i < j; ++i){
       REQUIRE(graph.scc_ids()[i] == i);
@@ -168,7 +145,7 @@ TEST_CASE("Graph 10: Strongly connected components - disjoint cycles",
           "[quick][graph][10]") {
 
   for (size_t j = 2; j < 50; ++j) {
-    Graph graph = Graph();
+    Graph graph = Graph(1);
 
     for (size_t k = 0; k < 10; ++k) {
       graph.add_nodes(j);
@@ -177,7 +154,7 @@ TEST_CASE("Graph 10: Strongly connected components - disjoint cycles",
       }
       graph.add_edge((k + 1) * j - 1, k * j);
 
-      graph.gabow_scc();
+      graph.gabow_scc_non_recursive_from_digraphs();
       for (size_t i = 0; i < j; ++i) {
         REQUIRE(graph.scc_ids()[i] == i/j);
       }
@@ -189,7 +166,7 @@ TEST_CASE("Graph 11: Strongly connected components - complete graphs",
           "[quick][graph][11]") {
 
   for (size_t k = 2; k < 50; ++k) {
-    Graph graph = Graph();
+    Graph graph = Graph(50);
     graph.add_nodes(k);
 
     for (size_t i = 0; i < k; ++i) {
@@ -199,9 +176,16 @@ TEST_CASE("Graph 11: Strongly connected components - complete graphs",
       }
     }
 
-    graph.gabow_scc();
+    graph.gabow_scc_non_recursive_from_digraphs();
     for (size_t i = 0; i < k; ++i) {
       REQUIRE(graph.scc_ids()[i] == 0);
     }
   }
+}
+
+TEST_CASE("Graph 12: Strongly connected components - empty graph",
+          "[quick][graph][12]") {
+  
+  Graph graph = Graph(0);
+  graph.gabow_scc_non_recursive_from_digraphs();
 }

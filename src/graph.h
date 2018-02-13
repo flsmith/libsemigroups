@@ -19,6 +19,7 @@
 #ifndef LIBSEMIGROUPS_SRC_GRAPH_H_
 #define LIBSEMIGROUPS_SRC_GRAPH_H_
 
+#include <iostream>
 #include <stack>
 #include "recvec.h"
 
@@ -36,9 +37,9 @@ namespace libsemigroups {
     // if we have graphs with max of size_t vertices we have bigger problems
     static const size_t UNDEFINED;
 
-    explicit Graph(size_t max_degree = 0, size_t nr_vertices = 0)
-        : base_recvec(max_degree, nr_vertices, UNDEFINED), _cc_comps(), _cc_ids(),
-          _has_scc(false), _next_edge_pos(nr_vertices) {}
+    explicit Graph(size_t degree, size_t nr_vertices = 0)
+        : base_recvec(degree, nr_vertices, UNDEFINED), _cc_ids(),
+          _has_scc(false), _next_edge_pos(nr_vertices), degree(degree) {}
 
     Graph &operator=(Graph const &graph) = delete;
 
@@ -58,12 +59,15 @@ namespace libsemigroups {
     size_t inline nr_nodes() { return nr_rows(); }
 
     void inline add_edge(size_t i, size_t j) {
-      resize_set(i, i < _nr_rows ?_next_edge_pos[i] : 0, j);
+      LIBSEMIGROUPS_ASSERT(_next_edge_pos[i] < degree);
+      LIBSEMIGROUPS_ASSERT(i < _nr_rows);
+      set(i, _next_edge_pos[i], j); 
       ++_next_edge_pos[i];
     }
 
     size_t inline nr_edges() {
       size_t edges = 0;
+      size_t count = 0;
       for (size_t i = 0; i < _nr_rows; ++i) {
         count += std::count_if(begin_row(i), end_row(i),
                                [](size_t j) { return j != UNDEFINED; });
@@ -84,6 +88,7 @@ namespace libsemigroups {
     // strongly based on the implementation
     // https://algs4.cs.princeton.edu/42digraph/GabowSCC.java.html
     // TODO: make non-recursive
+    /*
     void dive(size_t i) {
       visited[i] = true;
       preorder[i] = _pre++;
@@ -121,7 +126,7 @@ namespace libsemigroups {
         count++;
       }
     }
-
+    
     void gabow_scc() {
       _cc_ids = std::vector<size_t>(_nr_rows, UNDEFINED);
       _cc_comps.clear();
@@ -143,6 +148,107 @@ namespace libsemigroups {
         _cc_comps[_cc_ids[i]].push_back(i);
       }
     }
+*/
+
+   /*
+    void gabow_scc_non_recursive(){
+      tidy();
+
+      _cc_ids = std::vector<size_t>(_nr_rows, UNDEFINED);
+      std::stack<size_t> stack1;
+      std::stack<size_t> stack2;
+      size_t frames [2 * _nr_rows + 1];
+      size_t count = 0; 
+      size_t pre   = 0;
+      std::vector<size_t>(_nr_rows, UNDEFINED);
+
+      size_t end1 = 0;
+      size_t end2 = 0;
+      size_t level;
+
+      for (size_t v = 0; v < _nr_rows; ++v) {
+        if (_cc_ids[v] == UNDEFINED) {
+          level     = 1;
+          frames[0] = v;
+          frames[1] = 1;
+          stack1.push(v);
+          stack2.push(v);
+          
+          if (frames[1] > _next_edge_pos[frames[0]]) 
+             if stack
+
+
+
+
+
+
+        }
+      }
+    }*/
+
+    void gabow_scc_non_recursive_from_digraphs() {
+
+      tidy();
+      _cc_ids = std::vector<size_t>(_nr_rows, 0);
+      size_t end1 = 0;
+      std::vector<size_t> stack1(_nr_rows+1, UNDEFINED);
+      std::stack<size_t> stack2;
+      size_t frames[3 * _nr_rows + 1];
+      size_t *frame = frames;
+      
+      size_t w;
+      size_t count = _nr_rows;
+
+      for (size_t v = 0; v < _nr_rows; ++v) {
+        if (_cc_ids[v] == 0) {
+          size_t level = 1;
+          frame[0] = v; // vertex
+          frame[1] = 0; // index
+          stack1[++end1] = v;
+          stack2.push(end1);
+          _cc_ids[v] = end1;
+          while (1) {
+            if (frame[1] >= _next_edge_pos[frame[0]]) {
+              if (stack2.top() == _cc_ids[frame[0]]) {
+                stack2.pop();
+                do {
+                  w = stack1[end1--];
+                  _cc_ids[w] = count;
+                } while (w != frame[0]);
+                count++;
+              }
+              level--;
+              if (level == 0) {
+                break;
+              }
+              frame -= 2;
+            } else {
+              w = get(frame[0], frame[1]);
+              frame[1] += 1;
+              size_t idw = _cc_ids[w];
+
+              if (idw == 0) {
+                level++;
+                frame += 2;
+                frame[0] = w; // vertex
+                frame[1] = 0; // index
+                stack1[++end1] = w;
+                stack2.push(end1);
+                _cc_ids[w] = end1;
+              } else {
+                while (stack2.top() > idw) {
+                  stack2.pop(); 
+                }
+              }
+            }
+          }
+        }
+      }
+
+      for (size_t i = 0; i < _nr_rows; ++i) {
+        _cc_ids[i] -= _nr_rows;
+      }
+    }
 
     //for debug only. should be removed
     std::vector<size_t> scc_ids(){
@@ -150,39 +256,13 @@ namespace libsemigroups {
     }
 
   private:
-    // resizes the graph to have the necessary number of rows and columns
-    void resize_set(size_t i, size_t j, size_t k) {
-      // row indexing starts at 0, nr_rows starts at 1
-      // TODO: make this more obvious
-      if (i >= (static_cast<int>(_nr_rows - 1) < 0 ? 0 : _nr_rows)) {
-        add_nodes(i - _nr_rows + 1);
-      }
-
-      if (j >= (static_cast<int>(_nr_used_cols - 1) < 0 ? 0 : _nr_used_cols)) {
-        base_recvec::add_cols(j - _nr_used_cols + 1);
-      }
-
-      if (k >= (static_cast<int>(_nr_rows - 1) < 0 ? 0 : _nr_rows)) {
-        add_nodes(k - _nr_rows + 1);
-      }
-
-      base_recvec::set(i, j, k);
-      _has_scc = false;
-    }
-
     // TODO: prune data
-    std::vector<std::vector<size_t>> _cc_comps;
     std::vector<size_t> _cc_ids;
 
     // TODO: prune these when gabow made non-recursive
-    size_t count;
     bool _has_scc;
     std::vector<size_t> _next_edge_pos;
-    std::vector<size_t> preorder;
-    std::stack<size_t> s1;
-    std::stack<size_t> s2;
-    std::vector<bool> visited;
-    size_t _pre;
+    size_t degree;
   };
 
   const size_t Graph::UNDEFINED = std::numeric_limits<size_t>::max();
