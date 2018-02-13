@@ -27,7 +27,6 @@ namespace libsemigroups {
   // Represents vertices as rows
   // There is an edge (i, j) in the graph iff j occurs in row i
   //
-  // TODO: just make these regular
   // TODO: proper commentary (makedoc)
   // TODO: maybe mutability
   class Graph : public RecVec<size_t> {
@@ -85,115 +84,15 @@ namespace libsemigroups {
     }
 
     // Gabow's Strongly Connected Component algorithm
-    // strongly based on the implementation
-    // https://algs4.cs.princeton.edu/42digraph/GabowSCC.java.html
-    // TODO: make non-recursive
-    /*
-    void dive(size_t i) {
-      visited[i] = true;
-      preorder[i] = _pre++;
-      s1.push(i);
-      s2.push(i);
-      
-      // std::cout << "entered dive with i = " << i << std::endl;
-
-      // assumes we've tidied the graph
-      for (size_t j = 0; j < _nr_used_cols; j++) {
-        size_t k = get(i, j);
-        //std::cout << "j = " << j << ", k = " << k << std::endl;
-        //std::cout << k << " visited: " << visited[k] << ", k id: " << _cc_ids[k] << std::endl;
-        if (k == UNDEFINED) {
-          break;
-        }
-        if (!visited[k]) {
-          dive(k);
-        } else if (_cc_ids[k] == UNDEFINED) {
-          while (preorder[s2.top()] > preorder[k]) {
-            s2.pop();
-          }
-        }
-      }
-
-      if (s2.top() == i) {
-        s2.pop();
-        size_t m = UNDEFINED;
-        do {
-          m = s1.top();
-          s1.pop();
-          _cc_ids[m] = count;
-          //std::cout << "popped, i = " << i << ", m = " << m << ", count = " << count << std::endl;
-        } while (i != m);
-        count++;
-      }
-    }
-    
+    // Strongly based on the implementation in Digraphs
+    // https://github.com/gap-packages/Digraphs
     void gabow_scc() {
-      _cc_ids = std::vector<size_t>(_nr_rows, UNDEFINED);
-      _cc_comps.clear();
-      preorder = std::vector<size_t>(_nr_rows, UNDEFINED);
-      visited = std::vector<bool>(_nr_rows, false);
-      _pre = 0;
-      tidy();
-      count = 0;
-
-      for (size_t i = 0; i < _nr_rows; ++i) {
-        if (!visited[i]) {
-          dive(i);
-        }
-      }
-      for (size_t i = 0; i < count; ++i) {
-        _cc_comps.push_back(std::vector<size_t>());
-      }
-      for (size_t i = 0; i < _nr_rows; ++i) {
-        _cc_comps[_cc_ids[i]].push_back(i);
-      }
-    }
-*/
-
-   /*
-    void gabow_scc_non_recursive(){
-      tidy();
-
-      _cc_ids = std::vector<size_t>(_nr_rows, UNDEFINED);
-      std::stack<size_t> stack1;
-      std::stack<size_t> stack2;
-      size_t frames [2 * _nr_rows + 1];
-      size_t count = 0; 
-      size_t pre   = 0;
-      std::vector<size_t>(_nr_rows, UNDEFINED);
-
-      size_t end1 = 0;
-      size_t end2 = 0;
-      size_t level;
-
-      for (size_t v = 0; v < _nr_rows; ++v) {
-        if (_cc_ids[v] == UNDEFINED) {
-          level     = 1;
-          frames[0] = v;
-          frames[1] = 1;
-          stack1.push(v);
-          stack2.push(v);
-          
-          if (frames[1] > _next_edge_pos[frames[0]]) 
-             if stack
-
-
-
-
-
-
-        }
-      }
-    }*/
-
-    void gabow_scc_non_recursive_from_digraphs() {
-
       tidy();
       _cc_ids = std::vector<size_t>(_nr_rows, 0);
       size_t end1 = 0;
       std::vector<size_t> stack1(_nr_rows+1, UNDEFINED);
       std::stack<size_t> stack2;
-      size_t frames[3 * _nr_rows + 1];
+      size_t frames[2 * _nr_rows + 1];
       size_t *frame = frames;
       
       size_t w;
@@ -248,18 +147,20 @@ namespace libsemigroups {
       for (size_t i = 0; i < _nr_rows; ++i) {
         _cc_ids[i] -= _nr_rows;
       }
-    }
 
-    //for debug only. should be removed
-    std::vector<size_t> scc_ids(){
-      return _cc_ids;
+      _has_scc = true;
+    }
+  
+    size_t get_scc_id(size_t node) {
+      LIBSEMIGROUPS_ASSERT(node < _nr_rows);
+      if (!_has_scc) {
+        gabow_scc();
+      }
+     return _cc_ids[node]; 
     }
 
   private:
-    // TODO: prune data
     std::vector<size_t> _cc_ids;
-
-    // TODO: prune these when gabow made non-recursive
     bool _has_scc;
     std::vector<size_t> _next_edge_pos;
     size_t degree;

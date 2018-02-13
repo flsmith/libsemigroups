@@ -119,10 +119,10 @@ TEST_CASE("Graph 08: Strongly connected components - cycles",
       cycle.add_edge(i, i + 1);
     }
     cycle.add_edge(j, 0);
-    cycle.gabow_scc_non_recursive_from_digraphs();
+    cycle.gabow_scc();
 
-    for (size_t i : cycle.scc_ids()) {
-      REQUIRE(i == 0);
+    for (size_t i = 0; i < j; ++i) {
+      REQUIRE(cycle.get_scc_id(i) == 0);
     }
   }
 }
@@ -133,10 +133,10 @@ TEST_CASE("Graph 09: Strongly connected components - no edges",
   Graph graph = Graph(0);
   for (size_t j = 2; j < 100; ++j) {
     graph.add_nodes(j);
-    graph.gabow_scc_non_recursive_from_digraphs();
+    graph.gabow_scc();
 
     for (size_t i = 0; i < j; ++i){
-      REQUIRE(graph.scc_ids()[i] == i);
+      REQUIRE(graph.get_scc_id(i) == i);
     }
   }
 }
@@ -154,9 +154,9 @@ TEST_CASE("Graph 10: Strongly connected components - disjoint cycles",
       }
       graph.add_edge((k + 1) * j - 1, k * j);
 
-      graph.gabow_scc_non_recursive_from_digraphs();
+      graph.gabow_scc();
       for (size_t i = 0; i < j; ++i) {
-        REQUIRE(graph.scc_ids()[i] == i/j);
+        REQUIRE(graph.get_scc_id(i) == i/j);
       }
     }
   }
@@ -176,9 +176,9 @@ TEST_CASE("Graph 11: Strongly connected components - complete graphs",
       }
     }
 
-    graph.gabow_scc_non_recursive_from_digraphs();
+    graph.gabow_scc();
     for (size_t i = 0; i < k; ++i) {
-      REQUIRE(graph.scc_ids()[i] == 0);
+      REQUIRE(graph.get_scc_id(i) == 0);
     }
   }
 }
@@ -187,5 +187,5 @@ TEST_CASE("Graph 12: Strongly connected components - empty graph",
           "[quick][graph][12]") {
   
   Graph graph = Graph(0);
-  graph.gabow_scc_non_recursive_from_digraphs();
+  graph.gabow_scc();
 }
