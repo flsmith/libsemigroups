@@ -32,7 +32,7 @@ namespace libsemigroups {
   class Graph : public RecVec<size_t> {
     typedef RecVec<size_t, std::allocator<size_t>> base_recvec;
 
-  public:
+   public:
     // if we have graphs with max of size_t vertices we have bigger problems
     static const size_t UNDEFINED;
 
@@ -60,7 +60,7 @@ namespace libsemigroups {
     void inline add_edge(size_t i, size_t j) {
       LIBSEMIGROUPS_ASSERT(_next_edge_pos[i] < degree);
       LIBSEMIGROUPS_ASSERT(i < _nr_rows);
-      set(i, _next_edge_pos[i], j); 
+      set(i, _next_edge_pos[i], j);
       ++_next_edge_pos[i];
     }
 
@@ -92,17 +92,16 @@ namespace libsemigroups {
       size_t end1 = 0;
       std::vector<size_t> stack1(_nr_rows+1, UNDEFINED);
       std::stack<size_t> stack2;
-      size_t frames[2 * _nr_rows + 1];
-      size_t *frame = frames;
-      
+      size_t *frame = new size_t[2 * _nr_rows + 1];
+
       size_t w;
       size_t count = _nr_rows;
 
       for (size_t v = 0; v < _nr_rows; ++v) {
         if (_cc_ids[v] == 0) {
           size_t level = 1;
-          frame[0] = v; // vertex
-          frame[1] = 0; // index
+          frame[0] = v;  // vertex
+          frame[1] = 0;  // index
           stack1[++end1] = v;
           stack2.push(end1);
           _cc_ids[v] = end1;
@@ -129,14 +128,14 @@ namespace libsemigroups {
               if (idw == 0) {
                 level++;
                 frame += 2;
-                frame[0] = w; // vertex
-                frame[1] = 0; // index
+                frame[0] = w;  // vertex
+                frame[1] = 0;  // index
                 stack1[++end1] = w;
                 stack2.push(end1);
                 _cc_ids[w] = end1;
               } else {
                 while (stack2.top() > idw) {
-                  stack2.pop(); 
+                  stack2.pop();
                 }
               }
             }
@@ -150,16 +149,16 @@ namespace libsemigroups {
 
       _has_scc = true;
     }
-  
+
     size_t get_scc_id(size_t node) {
       LIBSEMIGROUPS_ASSERT(node < _nr_rows);
       if (!_has_scc) {
         gabow_scc();
       }
-     return _cc_ids[node]; 
+     return _cc_ids[node];
     }
 
-  private:
+   private:
     std::vector<size_t> _cc_ids;
     bool _has_scc;
     std::vector<size_t> _next_edge_pos;
