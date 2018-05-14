@@ -56,11 +56,45 @@ namespace libsemigroups {
   //! When the enumeration of the semigroup is complete, the size, the left and
   //! right Cayley graphs are determined, and a confluent terminating
   //! presentation for the semigroup is known.
+
   template <typename TElementType  = Element*,
             typename TElementHash  = std::hash<TElementType>,
             typename TElementEqual = std::equal_to<TElementType>>
   class Semigroup : public ElementContainer<TElementType>,
                     public SemigroupBase {
+    using value_type = typename ElementContainer<TElementType>::value_type;
+    using const_value_type =
+        typename ElementContainer<TElementType>::const_value_type;
+    using const_reference =
+        typename ElementContainer<TElementType>::const_reference;
+
+    using internal_value_type =
+        typename ElementContainer<TElementType>::internal_value_type;
+    using internal_const_value_type =
+        typename ElementContainer<TElementType>::internal_const_value_type;
+
+    static_assert(std::is_trivial<internal_value_type>::value,
+                  "internal_value_type must be trivial");
+    static_assert(std::is_trivial<internal_const_value_type>::value,
+                  "internal_const_value_type must be trivial");
+    static_assert(
+        std::is_const<internal_const_value_type>::value
+            || std::is_const<typename std::remove_pointer<
+                   internal_const_value_type>::type>::value,
+        "internal_const_value_type must be const or pointer to const");
+
+    struct InternalElementHash : public ElementContainer<TElementType> {
+      size_t operator()(internal_value_type x) const {
+        return TElementHash{}(this->to_external(x));
+      }
+    };
+
+    struct InternalElementEqual : public ElementContainer<TElementType> {
+      bool operator()(internal_value_type x, internal_value_type y) const {
+        return TElementEqual{}(this->to_external(x), this->to_external(y));
+      }
+    };
+
     // The elements of a semigroup are stored in _elements, but because of the
     // way add_generators/closure work, it might not be the case that all the
     // words of a given length are contiguous in _elements. Hence we require a
@@ -70,10 +104,10 @@ namespace libsemigroups {
     // the next K_2 values are the element_index_t's equal to the positions in
     // _elements of the words of length 2, and so on.
     //
-    // This typedef is used to distinguish variables that refer to positions in
+    // This alias is used to distinguish variables that refer to positions in
     // _elements (element_index_t) from those that refer to positions in
     // _enumerate_order (enumerate_index_t).
-    typedef index_t enumerate_index_t;
+    using enumerate_index_t = index_t;
 
    public:
     //! Deleted.
@@ -146,11 +180,12 @@ namespace libsemigroups {
       // slow (~50ms to ~10s!!!!)
       // reserve(_nrgens);
 
-      _degree = this->element_degree((*gens)[0]);
+      _degree = this->element_degree(this->to_internal((*gens)[0]));
 
-      for (TElementType x : *gens) {
-        LIBSEMIGROUPS_ASSERT(this->element_degree(x) == _degree);
-        _gens.push_back(this->copy(x));
+      for (TElementType const& x : *gens) {
+        LIBSEMIGROUPS_ASSERT(this->element_degree(this->to_internal(x))
+                             == _degree);
+        _gens.push_back(this->copy(this->to_internal(x)));
       }
 
       _tmp_product = this->one(_gens[0]);
@@ -183,7 +218,7 @@ namespace libsemigroups {
           _length.push_back(1);
           _map.insert(std::make_pair(_elements.back(), _nr));
           _prefix.push_back(UNDEFINED);
-          // _prefix.push_back(_nr) and get rid of _letter_to_pos, and
+          // TODO _prefix.push_back(_nr) and get rid of _letter_to_pos, and
           // the extra clause in the enumerate method!
           _suffix.push_back(UNDEFINED);
           _nr++;
@@ -198,6 +233,9 @@ namespace libsemigroups {
 
     explicit Semigroup(std::vector<TElementType> const* gens)
         : Semigroup(const_cast<std::vector<TElementType>*>(gens)) {}
+
+    explicit Semigroup(std::initializer_list<TElementType> gens)
+        : Semigroup(std::vector<TElementType>(gens)) {}
 
     //! Copy constructor.
     //!
@@ -251,8 +289,8 @@ namespace libsemigroups {
       _tmp_product = this->copy(S._id);
 
       element_index_t i = 0;
-      for (TElementType x : S._elements) {
-        TElementType y = this->copy(x);
+      for (internal_value_type const& x : S._elements) {
+        internal_value_type y = this->copy(x);
         _elements.push_back(y);
         _map.insert(std::make_pair(y, i++));
       }
@@ -306,12 +344,14 @@ namespace libsemigroups {
           _sorted(),
           _wordlen(0) {
       LIBSEMIGROUPS_ASSERT(!coll->empty());
-      LIBSEMIGROUPS_ASSERT(this->element_degree(coll->at(0)) >= S.degree());
+      LIBSEMIGROUPS_ASSERT(this->element_degree(this->to_internal(coll->at(0)))
+                           >= S.degree());
 
 #ifdef LIBSEMIGROUPS_DEBUG
-      for (TElementType x : *coll) {
-        LIBSEMIGROUPS_ASSERT(this->element_degree(x)
-                             == this->element_degree((*coll)[0]));
+      for (TElementType const& x : *coll) {
+        LIBSEMIGROUPS_ASSERT(
+            this->element_degree(this->to_internal(x))
+            == this->element_degree(this->to_internal((*coll)[0])));
       }
 #endif
 #ifdef LIBSEMIGROUPS_STATS
@@ -327,7 +367,8 @@ namespace libsemigroups {
       _prefix.resize(S._nr, 0);
       _suffix.resize(S._nr, 0);
 
-      size_t deg_plus = this->element_degree(coll->at(0)) - S.degree();
+      size_t deg_plus
+          = this->element_degree(this->to_internal(coll->at(0))) - S.degree();
 
       if (deg_plus != 0) {
         _degree += deg_plus;
@@ -349,8 +390,8 @@ namespace libsemigroups {
         _length[_enumerate_order[i]] = 1;
       }
 
-      _id          = this->one(coll->at(0));
-      _tmp_product = this->copy(S._id, deg_plus);
+      _id          = this->one(this->to_internal(coll->at(0)));
+      _tmp_product = this->copy(_id);
 
 #if defined(LIBSEMIGROUPS_HAVE_DENSEHASHMAP) \
     && defined(LIBSEMIGROUPS_USE_DENSEHASHMAP)
@@ -361,8 +402,9 @@ namespace libsemigroups {
 #endif
 
       element_index_t i = 0;
-      for (TElementType x : S._elements) {
-        TElementType y = this->copy(x, deg_plus);
+      for (internal_value_type const& x : S._elements) {
+        internal_value_type y = this->copy(x);
+        this->increase_deg_by(y, deg_plus);
         _elements.push_back(y);
         _map.insert(std::make_pair(y, i));
         is_one(y, i++);
@@ -378,10 +420,10 @@ namespace libsemigroups {
       this->free(_id);
 
       // delete those generators not in _elements, i.e. the duplicate ones
-      for (auto& x : _duplicate_gens) {
+      for (std::pair<letter_t, letter_t>& x : _duplicate_gens) {
         this->free(_gens[x.first]);
       }
-      for (TElementType x : _elements) {
+      for (internal_value_type x : _elements) {
         this->free(x);
       }
     }
@@ -422,16 +464,16 @@ namespace libsemigroups {
     TElementType word_to_element(word_t const& w) const {
       LIBSEMIGROUPS_ASSERT(w.size() > 0);
       if (is_done() || w.size() == 1) {
-        return this->copy(_elements[word_to_pos(w)]);
+        return this->to_external(this->copy(_elements[word_to_pos(w)]));
       }
-      TElementType out
-          = this->multiply(this->copy(_tmp_product), _gens[w[0]], _gens[w[1]]);
-      for (auto it = w.begin() + 2; it < w.end(); it++) {
+      internal_value_type out = this->copy(_tmp_product);
+      this->multiply(out, _gens[w[0]], _gens[w[1]]);
+      for (auto it = w.begin() + 2; it < w.end(); ++it) {
         LIBSEMIGROUPS_ASSERT(*it < nrgens());
         this->swap(_tmp_product, out);
-        out = this->multiply(out, _tmp_product, _gens[*it]);
+        this->multiply(out, _tmp_product, _gens[*it]);
       }
-      return out;
+      return this->to_external(out);
     }
 
     //! Returns the maximum length of a word in the generators so far computed.
@@ -464,7 +506,7 @@ namespace libsemigroups {
     //! Return a pointer to the generator with index \p pos.
     TElementType gens(letter_t pos) const {
       LIBSEMIGROUPS_ASSERT(pos < _gens.size());
-      return _gens[pos];
+      return this->to_external(this->copy(_gens[pos]));
     }
 
     //! Returns \c true if the semigroup is fully enumerated and \c false if
@@ -495,11 +537,11 @@ namespace libsemigroups {
     //!
     //! \sa Semigroup::position and Semigroup::sorted_position.
     element_index_t current_position(TElementType x) const {
-      if (this->element_degree(x) != _degree) {
+      if (this->element_degree(this->to_internal(x)) != _degree) {
         return UNDEFINED;
       }
 
-      auto it = _map.find(x);
+      auto it = _map.find(this->to_internal(x));
       return (it == _map.end() ? UNDEFINED : it->second);
     }
 
@@ -654,7 +696,7 @@ namespace libsemigroups {
           || length_const(j) < 2 * this->complexity(_tmp_product)) {
         return product_by_reduction(i, j);
       } else {
-        _tmp_product = this->multiply(_tmp_product, _elements[i], _elements[j]);
+        this->multiply(_tmp_product, _elements[i], _elements[j]);
         return _map.find(_tmp_product)->second;
       }
     }
@@ -779,12 +821,12 @@ namespace libsemigroups {
     //! enumerated in batches until \p x is found or the semigroup is fully
     //! enumerated but \p x was not found (see Semigroup::set_batch_size).
     element_index_t position(TElementType x) {
-      if (this->element_degree(x) != _degree) {
+      if (this->element_degree(this->to_internal(x)) != _degree) {
         return UNDEFINED;
       }
 
       while (true) {
-        auto it = _map.find(x);
+        auto it = _map.find(this->to_internal(x));
         if (it != _map.end()) {
           return it->second;
         }
@@ -823,7 +865,7 @@ namespace libsemigroups {
     //! Semigroup::size, then this method returns \c nullptr.
     TElementType at(element_index_t pos) {
       enumerate(pos + 1);
-      return _elements.at(pos);
+      return this->to_external(_elements.at(pos));
     }
 
     //! Returns the element of the semigroup in position \p pos.
@@ -832,7 +874,7 @@ namespace libsemigroups {
     //! enumeration of the semigroup.
     TElementType operator[](element_index_t pos) const {
       LIBSEMIGROUPS_ASSERT(pos < _elements.size());
-      return _elements[pos];
+      return this->to_external(_elements[pos]);
     }
 
     //! Returns the element of the semigroup in position \p pos of the sorted
@@ -841,7 +883,7 @@ namespace libsemigroups {
     //! This method fully enumerates the semigroup.
     TElementType sorted_at(element_index_t pos) {
       init_sorted();
-      return _sorted.at(pos).first;
+      return this->to_external(_sorted.at(pos).first);
     }
 
     //! Returns the index of the product of the element in position \p i with
@@ -900,6 +942,10 @@ namespace libsemigroups {
           word.push_back(_first[pos]);
           pos = _suffix[pos];
         }
+      } else {
+        throw LibsemigroupsException(
+            "Semigroup::minimal_factorisation: index " + std::to_string(pos)
+            + " out of range, should be at most " + std::to_string(_nr));
       }
     }
 
@@ -909,19 +955,9 @@ namespace libsemigroups {
     //! This is the same as the two-argument method for
     //! Semigroup::minimal_factorisation, but it returns a pointer to the
     //! factorisation instead of modifying an argument in-place.
-    word_t* minimal_factorisation(element_index_t pos) override {
-      if (pos >= _nr && !is_done()) {
-        enumerate(pos + 1);
-      }
-
-      if (pos >= _nr) {
-        return nullptr;
-      }
-      word_t* word = new word_t();
-      while (pos != UNDEFINED) {
-        word->push_back(_first[pos]);
-        pos = _suffix[pos];
-      }
+    word_t minimal_factorisation(element_index_t pos) override {
+      word_t word;
+      minimal_factorisation(word, pos);
       return word;
     }
 
@@ -930,12 +966,13 @@ namespace libsemigroups {
     //!
     //! This is the same as the method taking a Semigroup::element_index_t, but
     //! it factorises an Element instead of using the position of an element.
-    word_t* minimal_factorisation(TElementType x) {
+    word_t minimal_factorisation(TElementType const& x) {
       element_index_t pos = this->position(x);
       if (pos == UNDEFINED) {
-        return nullptr;
+        throw LibsemigroupsException(
+            "the argument is not an element of the semigroup");
       }
-      return factorisation(pos);
+      return minimal_factorisation(pos);
     }
 
     //! Changes \p word in-place to contain a word in the generators equal to
@@ -954,7 +991,7 @@ namespace libsemigroups {
     //! The key difference between this method and
     //! Semigroup::minimal_factorisation(element_index_t pos), is that the
     //! resulting factorisation may not be minimal.
-    word_t* factorisation(element_index_t pos) override {
+    word_t factorisation(element_index_t pos) override {
       return minimal_factorisation(pos);
     }
 
@@ -963,7 +1000,7 @@ namespace libsemigroups {
     //! The key difference between this method and
     //! Semigroup::minimal_factorisation(TElementType x), is that the
     //! resulting factorisation may not be minimal.
-    word_t* factorisation(TElementType x) {
+    word_t factorisation(TElementType const& x) {
       return minimal_factorisation(x);
     }
 
@@ -1104,8 +1141,7 @@ namespace libsemigroups {
         while (_pos < _lenindex[1]) {
           element_index_t i = _enumerate_order[_pos];
           for (letter_t j = 0; j != _nrgens; ++j) {
-            _tmp_product
-                = this->multiply(_tmp_product, _elements[i], _gens[j], tid);
+            this->multiply(_tmp_product, _elements[i], _gens[j], tid);
 #ifdef LIBSEMIGROUPS_STATS
             _nr_products++;
 #endif
@@ -1163,8 +1199,7 @@ namespace libsemigroups {
                 _right.set(i, j, _right.get(_letter_to_pos[b], _final[r]));
               }
             } else {
-              _tmp_product
-                  = this->multiply(_tmp_product, _elements[i], _gens[j], tid);
+              this->multiply(_tmp_product, _elements[i], _gens[j], tid);
 #ifdef LIBSEMIGROUPS_STATS
               _nr_products++;
 #endif
@@ -1271,7 +1306,8 @@ namespace libsemigroups {
       Timer  timer;
       size_t tid = glob_reporter.thread_id(std::this_thread::get_id());
 
-      LIBSEMIGROUPS_ASSERT(degree() == this->element_degree(*coll->begin()));
+      LIBSEMIGROUPS_ASSERT(
+          degree() == this->element_degree(this->to_internal(*coll->begin())));
 
       // get some parameters from the old semigroup
       letter_t old_nrgens  = _nrgens;
@@ -1291,11 +1327,12 @@ namespace libsemigroups {
       }
 
       // add the new generators to new _gens, _elements, and _enumerate_order
-      for (TElementType x : *coll) {
-        LIBSEMIGROUPS_ASSERT(this->element_degree(x) == degree());
-        auto it = _map.find(x);
+      for (TElementType& x : *coll) {
+        LIBSEMIGROUPS_ASSERT(this->element_degree(this->to_internal(x))
+                             == degree());
+        auto it = _map.find(this->to_internal(x));
         if (it == _map.end()) {  // new generator
-          _gens.push_back(this->copy(x));
+          _gens.push_back(this->copy(this->to_internal(x)));
           _elements.push_back(_gens.back());
           _map.insert(std::make_pair(_gens.back(), _nr));
 
@@ -1305,13 +1342,13 @@ namespace libsemigroups {
           _letter_to_pos.push_back(_nr);
           _enumerate_order.push_back(_nr);
 
-          is_one(x, _nr);
+          is_one(this->to_internal(x), _nr);
           _prefix.push_back(UNDEFINED);
           _suffix.push_back(UNDEFINED);
           _length.push_back(1);
           _nr++;
         } else if (_letter_to_pos[_first[it->second]] == it->second) {
-          _gens.push_back(this->copy(x));
+          _gens.push_back(this->copy(this->to_internal(x)));
           // x is one of the existing generators
           _duplicate_gens.push_back(
               std::make_pair(_gens.size() - 1, _first[it->second]));
@@ -1503,7 +1540,7 @@ namespace libsemigroups {
       if (coll->empty()) {
         return;
       } else {
-        std::vector<TElementType> singleton(1, nullptr);
+        std::vector<TElementType> singleton(1);
 
         for (auto const& x : *coll) {
           if (!test_membership(x)) {
@@ -1569,6 +1606,7 @@ namespace libsemigroups {
     //
     //!  If \p val is true, then some methods for a Semigroup object may
     //! report information about the progress of the computation.
+    // FIXME remove this
     void set_report(bool val) const override {
       glob_reporter.set_report(val);
     }
@@ -1592,8 +1630,8 @@ namespace libsemigroups {
       typedef typename std::vector<TElementType>::size_type  size_type;
       typedef typename std::vector<T>::difference_type       difference_type;
       typedef typename std::vector<TElementType>::value_type value_type;
-      typedef typename std::vector<TElementType>::const_reference reference;
-      typedef typename std::vector<TElementType>::const_pointer   pointer;
+      using reference = typename C::reference;
+      typedef typename std::vector<TElementType>::const_pointer pointer;
       typedef std::random_access_iterator_tag iterator_category;
 
       explicit iterator_base(typename std::vector<T>::const_iterator it_vec)
@@ -1700,36 +1738,48 @@ namespace libsemigroups {
       static C const                          _methods;
     };  // iterator_base definition ends
 
-    struct IteratorMethods {
+    struct IteratorMethods : public ElementContainer<TElementType> {
       IteratorMethods() {}
-      typename std::vector<TElementType>::const_reference
-      indirection(typename std::vector<TElementType>::const_iterator it) const {
-        return *it;
+      using reference =
+          typename std::conditional<std::is_trivial<value_type>::value,
+                                    value_type,
+                                    const_reference>::type;
+
+      reference indirection(
+          typename std::vector<internal_value_type>::const_iterator it) const {
+        return this->to_external(*it);
       }
-      typename std::vector<TElementType>::const_pointer
-      addressof(typename std::vector<TElementType>::const_iterator it) const {
-        return &(*it);
+
+      typename std::vector<TElementType>::const_pointer addressof(
+          typename std::vector<internal_value_type>::const_iterator it) const {
+        return &(this->to_external(*it));
       }
     };
 
-    struct IteratorMethodsPairFirst {
+    struct IteratorMethodsPairFirst : public ElementContainer<TElementType> {
+      using reference =
+          typename std::conditional<std::is_trivial<value_type>::value,
+                                    value_type,
+                                    const_reference>::type;
+
       IteratorMethodsPairFirst() {}
-      typename std::vector<TElementType>::const_reference
-      indirection(typename std::vector<
-                  std::pair<TElementType, element_index_t>>::const_iterator it)
-          const {
-        return (*it).first;
+      reference indirection(
+          typename std::vector<
+              std::pair<internal_value_type, element_index_t>>::const_iterator
+              it) const {
+        return this->to_external((*it).first);
       }
 
       typename std::vector<TElementType>::const_pointer
-      addressof(typename std::vector<std::pair<TElementType, element_index_t>>::
-                    const_iterator it) const {
-        return &((*it).first);
+      addressof(typename std::vector<
+                std::pair<internal_value_type, element_index_t>>::const_iterator
+                    it) const {
+        return &(this->to_external((*it).first));
       }
     };
 
-    typedef iterator_base<TElementType, IteratorMethods> const_iterator;
-    typedef iterator_base<std::pair<TElementType, element_index_t>,
+    typedef iterator_base<internal_value_type, IteratorMethods> const_iterator;
+    typedef iterator_base<std::pair<internal_value_type, element_index_t>,
                           IteratorMethodsPairFirst>
                                                   const_iterator_pair_first;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
@@ -1748,8 +1798,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_iterator cbegin() const {
       return const_iterator(_elements.cbegin());
     }
@@ -1759,8 +1808,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_iterator begin() const {
       return cbegin();
     }
@@ -1770,8 +1818,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_iterator cend() const {
       return const_iterator(_elements.cend());
     }
@@ -1781,8 +1828,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_iterator end() const {
       return cend();
     }
@@ -1792,8 +1838,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_reverse_iterator crbegin() const {
       return const_reverse_iterator(cend());
     }
@@ -1803,8 +1848,7 @@ namespace libsemigroups {
     //!
     //! This method does not perform any enumeration of the semigroup, the
     //! iterator returned may be invalidated by any call to a non-const method
-    //! of
-    //! the Semigroup class.
+    //! of the Semigroup class.
     const_reverse_iterator crend() const {
       return const_reverse_iterator(cbegin());
     }
@@ -1887,8 +1931,8 @@ namespace libsemigroups {
 
     // Check if an element is the identity, x should be in the position pos
     // of _elements.
-    void inline is_one(TElementType x, element_index_t pos) {
-      if (!_found_one && TElementEqual()(x, _id)) {
+    void inline is_one(internal_value_type x, element_index_t pos) {
+      if (!_found_one && InternalElementEqual{}(x, _id)) {  // NOLINT()
         _pos_one   = pos;
         _found_one = true;
       }
@@ -1901,7 +1945,7 @@ namespace libsemigroups {
       _gens.resize(_nrgens);
       std::vector<bool> seen(_nrgens, false);
       // really copy duplicate gens from _elements
-      for (auto const& x : _duplicate_gens) {
+      for (std::pair<letter_t, letter_t> const& x : _duplicate_gens) {
         // The degree of everything in _elements has already been increased (if
         // it needs to be at all), and so we do not need to increase the degree
         // in the copy below.
@@ -1933,8 +1977,7 @@ namespace libsemigroups {
           _right.set(i, j, _right.get(_letter_to_pos[b], _final[r]));
         }
       } else {
-        _tmp_product
-            = this->multiply(_tmp_product, _elements[i], _gens[j], tid);
+        this->multiply(_tmp_product, _elements[i], _gens[j], tid);
         auto it = _map.find(_tmp_product);
         if (it == _map.end()) {  // it's new!
           is_one(_tmp_product, _nr);
@@ -1991,13 +2034,11 @@ namespace libsemigroups {
       for (element_index_t i = 0; i < n; i++) {
         _sorted.push_back(std::make_pair(_elements[i], i));
       }
-      std::sort(
-          _sorted.begin(),
-          _sorted.end(),
-          [this](std::pair<TElementType, element_index_t> const& x,
-                 std::pair<TElementType, element_index_t> const& y) -> bool {
-            return this->cmp(x.first, y.first);
-          });
+      std::sort(_sorted.begin(),
+                _sorted.end(),
+                [this](std::pair<internal_value_type, element_index_t> const& x,
+                       std::pair<internal_value_type, element_index_t> const& y)
+                    -> bool { return this->cmp(x.first, y.first); });
 
       // Invert the permutation in _sorted[*].second
       std::vector<element_index_t> tmp_inverter;
@@ -2010,7 +2051,7 @@ namespace libsemigroups {
       }
     }
 
-    typedef std::pair<TElementType, element_index_t> idempotent_value_t;
+    typedef std::pair<internal_value_type, element_index_t> idempotent_value_t;
 
     // Find the idempotents and store their pointers and positions in a
     // std::pair of type idempotent_value_t.
@@ -2159,15 +2200,14 @@ namespace libsemigroups {
       }
 
       // Cannot use _tmp_product itself since there are multiple threads here!
-      TElementType tmp_product = this->copy(_tmp_product);
-      size_t       tid = glob_reporter.thread_id(std::this_thread::get_id());
+      internal_value_type tmp_product = this->copy(_tmp_product);
+      size_t tid = glob_reporter.thread_id(std::this_thread::get_id());
 
       for (; pos < last; pos++) {
         element_index_t k = _enumerate_order[pos];
         if (!_is_idempotent[k]) {
-          tmp_product
-              = this->multiply(tmp_product, _elements[k], _elements[k], tid);
-          if (TElementEqual()(tmp_product, _elements[k])) {
+          this->multiply(tmp_product, _elements[k], _elements[k], tid);
+          if (InternalElementEqual{}(tmp_product, _elements[k])) {  // NOLINT()
             idempotents.push_back(idempotent_value_t(_elements[k], k));
             _is_idempotent[k] = true;
           }
@@ -2180,13 +2220,13 @@ namespace libsemigroups {
     size_t                                     _batch_size;
     element_index_t                            _degree;
     std::vector<std::pair<letter_t, letter_t>> _duplicate_gens;
-    std::vector<TElementType>                  _elements;
+    std::vector<internal_value_type>           _elements;
     std::vector<element_index_t>               _enumerate_order;
     std::vector<letter_t>                      _final;
     std::vector<letter_t>                      _first;
     bool                                       _found_one;
-    std::vector<TElementType>                  _gens;
-    TElementType                               _id;
+    std::vector<internal_value_type>           _gens;
+    internal_value_type                        _id;
     std::vector<idempotent_value_t>            _idempotents;
     bool                                       _idempotents_found;
     std::vector<uint8_t>                       _is_idempotent;
@@ -2196,34 +2236,34 @@ namespace libsemigroups {
     std::vector<element_index_t>               _letter_to_pos;
 #if defined(LIBSEMIGROUPS_HAVE_DENSEHASHMAP) \
     && defined(LIBSEMIGROUPS_USE_DENSEHASHMAP)
-    google::dense_hash_map<TElementType,
+    google::dense_hash_map<internal_value_type,
                            element_index_t,
-                           TElementHash,
-                           TElementEqual>
+                           InternalElementHash,
+                           InternalElementEqual>
         _map;
 #else
-    std::unordered_map<TElementType,
+    std::unordered_map<internal_value_type,
                        element_index_t,
-                       TElementHash,
-                       TElementEqual>
+                       InternalElementHash,
+                       InternalElementEqual>
         _map;
 #endif
-    size_t                                                _max_threads;
-    std::mutex                                            _mtx;
-    index_t                                               _nr;
-    letter_t                                              _nrgens;
-    size_t                                                _nrrules;
-    enumerate_index_t                                     _pos;
-    element_index_t                                       _pos_one;
-    std::vector<element_index_t>                          _prefix;
-    RecVec<bool>                                          _reduced;
-    letter_t                                              _relation_gen;
-    enumerate_index_t                                     _relation_pos;
-    cayley_graph_t                                        _right;
-    std::vector<std::pair<TElementType, element_index_t>> _sorted;
-    std::vector<element_index_t>                          _suffix;
-    mutable TElementType                                  _tmp_product;
-    size_t                                                _wordlen;
+    size_t                                                       _max_threads;
+    std::mutex                                                   _mtx;
+    index_t                                                      _nr;
+    letter_t                                                     _nrgens;
+    size_t                                                       _nrrules;
+    enumerate_index_t                                            _pos;
+    element_index_t                                              _pos_one;
+    std::vector<element_index_t>                                 _prefix;
+    RecVec<bool>                                                 _reduced;
+    letter_t                                                     _relation_gen;
+    enumerate_index_t                                            _relation_pos;
+    cayley_graph_t                                               _right;
+    std::vector<std::pair<internal_value_type, element_index_t>> _sorted;
+    std::vector<element_index_t>                                 _suffix;
+    mutable internal_value_type                                  _tmp_product;
+    size_t                                                       _wordlen;
 
 #ifdef LIBSEMIGROUPS_STATS
     size_t _nr_products;
