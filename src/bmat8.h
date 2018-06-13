@@ -26,6 +26,8 @@
 #include <iostream>
 #include <random>
 
+#include <x86intrin.h>
+
 #include "libsemigroups-debug.h"
 #include "timer.h"
 #include "to_string.h"
@@ -165,24 +167,43 @@ namespace libsemigroups {
     //! boolean semiring) of two BMat8 objects.
     //! Uses the technique given <a href="https://stackoverflow.com/a/18448513">
     //! here</a>.
+    /* inline BMat8 operator*(BMat8 const& that) const { */
+    /*   uint64_t y    = that.transpose()._data; */
+    /*   uint64_t data = 0; */
+    /*   uint64_t tmp  = 0; */
+    /*   uint64_t diag = 0x8040201008040201; */
+    /*   for (int i = 0; i < 8; ++i) { */
+    /*     tmp = _data & y; */
+    /*     tmp |= tmp >> 1; */
+    /*     tmp |= tmp >> 2; */
+    /*     tmp |= tmp >> 4; */
+    /*     tmp &= 0x0101010101010101; */
+    /*     tmp *= 255; */
+    /*     tmp &= diag; */
+    /*     data |= tmp; */
+    /*     y    = cyclic_shift(y); */
+    /*     tmp  = 0; */
+    /*     diag = cyclic_shift(diag); */
+    /*   } */
+    /*   return BMat8(data); */
+    /* } */
+
+    using epu = uint8_t __attribute__ ((vector_size (16), __may_alias__));
+
     inline BMat8 operator*(BMat8 const& that) const {
-      uint64_t y    = that.transpose()._data;
-      uint64_t data = 0;
-      uint64_t tmp  = 0;
-      uint64_t diag = 0x8040201008040201;
+      // epu shift = epu {1,2,3,4,5,6,7,0};
+      epu shift = epu {7,0,1,2,3,4,5,6};
+      epu x = _mm_set_epi64x(_data, _data);
+      epu y = _mm_set_epi64x(that.transpose()._data, that.transpose()._data);
+      epu data {};
+      epu diag = _mm_set_epi64x(0x8040201008040201, 0x8040201008040201);
       for (int i = 0; i < 8; ++i) {
-        tmp = _data & y;
-        tmp |= tmp >> 1;
-        tmp |= tmp >> 2;
-        tmp |= tmp >> 4;
-        tmp &= 0x0101010101010101;
-        tmp *= 255;
-        tmp &= diag;
-        data |= tmp;
-        y    = cyclic_shift(y);
-        diag = cyclic_shift(diag);
+        epu tmp = ((x & y) != 0);
+        data |= tmp & diag;
+        y    = _mm_shuffle_epi8(y, shift);
+        diag = _mm_shuffle_epi8(diag, shift);
       }
-      return BMat8(data);
+      return BMat8(_mm_extract_epi64(data, 0));
     }
 
     //! Returns the identity BMat8
