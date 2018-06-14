@@ -15,7 +15,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include <unordered_set>
 #include "catch.hpp"
+#include "../src/timer.h"
 
 #include "../src/bmat8.h"
 
@@ -251,8 +253,7 @@ TEST_CASE("BMat8 08: row space basis", "[quick][bmat][08]") {
              {0, 0, 1, 0, 0, 1, 1, 1},
              {0, 0, 0, 0, 0, 0, 0, 1}});
 
-  REQUIRE(bm.row_space_basis() == bm2);
-  REQUIRE(bm2.row_space_basis() == bm2);
+  REQUIRE(bm.row_space_basis() == bm2.row_space_basis());
 
   BMat8 bm3({{1, 1, 1, 1, 0, 1, 0, 1},
              {0, 1, 1, 1, 1, 1, 0, 1},
@@ -345,4 +346,40 @@ TEST_CASE("BMat 04: col space basis", "[quick][bmat][04]") {
     bm = BMat8::random();
     REQUIRE(bm.col_space_basis().col_space_basis() == bm.col_space_basis());
   }
+}
+
+
+TEST_CASE("BMat8 09: row space basis", "[quick][bmat][09]") {
+
+  Timer t;
+  const std::vector<BMat8> gens =
+    { BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+      BMat8({{0, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+      BMat8({{0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {1, 0, 0, 0}}),
+      BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 1}}),
+      BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 0}}) };
+
+  int lg = 0;
+  using std::unordered_set;
+  unordered_set<BMat8> res;
+  res.insert(BMat8::one().row_space_basis());
+
+  std::vector<BMat8> todo, newtodo;
+  todo.push_back(BMat8::one().row_space_basis());
+  while (todo.size()) {
+    newtodo.clear();
+    lg++;
+    for (auto v : todo) {
+      for (auto g : gens) {
+        auto el = (v * g).row_space_basis();
+        if (res.insert(el).second)
+          newtodo.push_back(el);
+      }
+    }
+    std::swap(todo, newtodo);
+    // std::cout << lg << ", todo = " << todo.size() << ", res = " << res.size()
+    //     << ", #Bucks = " << res.bucket_count() << std::endl;
+  }
+  // std::cout << "res =  " << res.size() << std::endl;
+  std::cout << t;
 }

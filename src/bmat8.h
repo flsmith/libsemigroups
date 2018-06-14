@@ -31,6 +31,7 @@
 #include "libsemigroups-debug.h"
 #include "timer.h"
 #include "to_string.h"
+#include "hpcombi.hpp"
 
 namespace libsemigroups {
 
@@ -161,9 +162,9 @@ namespace libsemigroups {
       return BMat8(x);
     }
 
-    using epu = uint8_t __attribute__ ((vector_size (16), __may_alias__));
-
-    static constexpr epu zero {};
+    using epu = HPCombi::epu8;
+    using Vect16 = HPCombi::Vect16;
+    using Perm16 = HPCombi::Perm16;
     static constexpr epu rotlow  { 7, 0, 1, 2, 3, 4, 5, 6};
     static constexpr epu rothigh { 0, 1, 2, 3, 4, 5, 6, 7,15, 8, 9,10,11,12,13,14};
     static constexpr epu rot     { 7, 0, 1, 2, 3, 4, 5, 6,15, 8, 9,10,11,12,13,14};
@@ -177,17 +178,37 @@ namespace libsemigroups {
       epu diag = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,
                   0x80,0x01,0x02,0x04,0x08,0x10,0x20,0x40};
       for (int i = 0; i < 4; ++i) {
-        data |= ((x & y) != zero) & diag;
+        data |= ((x & y) != HPCombi::cst_epu8_0x00) & diag;
         y    = _mm_shuffle_epi8(y, rot2);
         diag = _mm_shuffle_epi8(diag, rot2);
       }
       return BMat8(_mm_extract_epi64(data, 0) | _mm_extract_epi64(data, 1));
     }
 
+    inline BMat8 row_space_basis() const {
+      Vect16 res = _mm_set_epi64x(_data, 0);
+      res = res.revsorted().remove_dups();
+      Vect16 rescy = res;
+      // We now compute the union of all the included different rows
+      Vect16 andincl {};
+      for (int i=0; i<15; i++) {
+        rescy = rescy.permuted(Perm16::left_cycle());
+        andincl.v |= (rescy.v | res.v) == res.v ?
+          rescy.v : HPCombi::cst_epu8_0x00;
+      }
+      res.v = (res.v != andincl.v) ? res.v : HPCombi::cst_epu8_0x00;
+      return BMat8(_mm_extract_epi64(res.sorted(), 1));
+    }
+
+    inline BMat8 col_space_basis() const {
+      return transpose().row_space_basis().transpose();
+    }
+
+
     //! Returns the identity BMat8
     //!
     //! This method returns the 8 x 8 BMat8 with 1s on the main diagonal.
-    inline BMat8 one() const {
+    static inline BMat8 one() {
       return BMat8(0x8040201008040201);
     }
 
