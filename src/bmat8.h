@@ -193,9 +193,12 @@ namespace libsemigroups {
       Vect16 andincl {};
       for (int i=0; i<7; i++) {
         rescy = rescy.permuted(rotlow);
-        andincl.v |= (rescy.v | res.v) == res.v ? rescy.v : epu {};
+        // andincl.v |= (rescy.v | res.v) == res.v ? rescy.v : epu {};
+        andincl.v |= static_cast<epu>(
+          _mm_blendv_epi8(epu {}, rescy.v, (rescy.v | res.v) == res.v));
       }
-      res.v = (res.v != andincl.v) ? res.v : epu {};
+      //res.v = (res.v != andincl.v) ? res.v : epu {};
+      res.v = _mm_blendv_epi8(epu {}, res.v, (res.v != andincl.v));
       return BMat8(_mm_extract_epi64(res.sorted8(), 0));
     }
 
