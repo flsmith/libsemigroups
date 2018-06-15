@@ -178,7 +178,7 @@ namespace libsemigroups {
       epu diag = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,
                   0x80,0x01,0x02,0x04,0x08,0x10,0x20,0x40};
       for (int i = 0; i < 4; ++i) {
-        data |= ((x & y) != HPCombi::cst_epu8_0x00) & diag;
+        data |= ((x & y) != epu {}) & diag;
         y    = _mm_shuffle_epi8(y, rot2);
         diag = _mm_shuffle_epi8(diag, rot2);
       }
@@ -186,18 +186,17 @@ namespace libsemigroups {
     }
 
     inline BMat8 row_space_basis() const {
-      Vect16 res = _mm_set_epi64x(_data, 0);
-      res = res.revsorted().remove_dups();
+      Vect16 res = _mm_set_epi64x(0, _data);
+      res = res.revsorted8().remove_dups();
       Vect16 rescy = res;
       // We now compute the union of all the included different rows
       Vect16 andincl {};
-      for (int i=0; i<15; i++) {
-        rescy = rescy.permuted(Perm16::left_cycle());
-        andincl.v |= (rescy.v | res.v) == res.v ?
-          rescy.v : HPCombi::cst_epu8_0x00;
+      for (int i=0; i<7; i++) {
+        rescy = rescy.permuted(rotlow);
+        andincl.v |= (rescy.v | res.v) == res.v ? rescy.v : epu {};
       }
-      res.v = (res.v != andincl.v) ? res.v : HPCombi::cst_epu8_0x00;
-      return BMat8(_mm_extract_epi64(res.sorted(), 1));
+      res.v = (res.v != andincl.v) ? res.v : epu {};
+      return BMat8(_mm_extract_epi64(res.sorted8(), 0));
     }
 
     inline BMat8 col_space_basis() const {
