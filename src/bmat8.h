@@ -28,10 +28,10 @@
 
 #include <x86intrin.h>
 
+#include "hpcombi.hpp"
 #include "libsemigroups-debug.h"
 #include "timer.h"
 #include "to_string.h"
-#include "hpcombi.hpp"
 
 namespace libsemigroups {
 
@@ -162,23 +162,40 @@ namespace libsemigroups {
       return BMat8(x);
     }
 
-    using epu = HPCombi::epu8;
+    using epu    = HPCombi::epu8;
     using Vect16 = HPCombi::Vect16;
     using Perm16 = HPCombi::Perm16;
-    static constexpr epu rotlow  { 7, 0, 1, 2, 3, 4, 5, 6};
-    static constexpr epu rothigh { 0, 1, 2, 3, 4, 5, 6, 7,15, 8, 9,10,11,12,13,14};
-    static constexpr epu rot     { 7, 0, 1, 2, 3, 4, 5, 6,15, 8, 9,10,11,12,13,14};
-    static constexpr epu rot2    { 6, 7, 0, 1, 2, 3, 4, 5,14,15, 8, 9,10,11,12,13};
+    static constexpr epu rotlow{7, 0, 1, 2, 3, 4, 5, 6};
+    static constexpr epu
+        rothigh{0, 1, 2, 3, 4, 5, 6, 7, 15, 8, 9, 10, 11, 12, 13, 14};
+    static constexpr epu
+        rot{7, 0, 1, 2, 3, 4, 5, 6, 15, 8, 9, 10, 11, 12, 13, 14};
+    static constexpr epu
+        rot2{6, 7, 0, 1, 2, 3, 4, 5, 14, 15, 8, 9, 10, 11, 12, 13};
 
     inline BMat8 operator*(BMat8 const& that) const {
-      epu x = _mm_set_epi64x(_data, _data);
+      epu   x  = _mm_set_epi64x(_data, _data);
       BMat8 tr = that.transpose();
-      epu y = _mm_shuffle_epi8(_mm_set_epi64x(tr._data, tr._data), rothigh);
-      epu data {};
-      epu diag = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,
-                  0x80,0x01,0x02,0x04,0x08,0x10,0x20,0x40};
+      epu   y  = _mm_shuffle_epi8(_mm_set_epi64x(tr._data, tr._data), rothigh);
+      epu   data{};
+      epu   diag = {0x01,
+                  0x02,
+                  0x04,
+                  0x08,
+                  0x10,
+                  0x20,
+                  0x40,
+                  0x80,
+                  0x80,
+                  0x01,
+                  0x02,
+                  0x04,
+                  0x08,
+                  0x10,
+                  0x20,
+                  0x40};
       for (int i = 0; i < 4; ++i) {
-        data |= ((x & y) != epu {}) & diag;
+        data |= ((x & y) != epu{}) & diag;
         y    = _mm_shuffle_epi8(y, rot2);
         diag = _mm_shuffle_epi8(diag, rot2);
       }
@@ -186,26 +203,25 @@ namespace libsemigroups {
     }
 
     inline BMat8 row_space_basis() const {
-      Vect16 res = _mm_set_epi64x(0, _data);
-      res = res.revsorted8().remove_dups();
+      Vect16 res   = _mm_set_epi64x(0, _data);
+      res          = res.revsorted8().remove_dups();
       Vect16 rescy = res;
       // We now compute the union of all the included different rows
-      Vect16 andincl {};
-      for (int i=0; i<7; i++) {
+      Vect16 andincl{};
+      for (int i = 0; i < 7; i++) {
         rescy = rescy.permuted(rotlow);
         // andincl.v |= (rescy.v | res.v) == res.v ? rescy.v : epu {};
         andincl.v |= static_cast<epu>(
-          _mm_blendv_epi8(epu {}, rescy.v, (rescy.v | res.v) == res.v));
+            _mm_blendv_epi8(epu{}, rescy.v, (rescy.v | res.v) == res.v));
       }
-      //res.v = (res.v != andincl.v) ? res.v : epu {};
-      res.v = _mm_blendv_epi8(epu {}, res.v, (res.v != andincl.v));
+      // res.v = (res.v != andincl.v) ? res.v : epu {};
+      res.v = _mm_blendv_epi8(epu{}, res.v, (res.v != andincl.v));
       return BMat8(_mm_extract_epi64(res.sorted8(), 0));
     }
 
     inline BMat8 col_space_basis() const {
       return transpose().row_space_basis().transpose();
     }
-
 
     //! Returns the identity BMat8
     //!
@@ -262,6 +278,8 @@ namespace libsemigroups {
     }
 #endif
 
+    static bool is_group_index(BMat8 const& x, BMat8 const& y);
+
    private:
     uint64_t                                       _data;
     static std::random_device                      _rd;
@@ -270,7 +288,6 @@ namespace libsemigroups {
     static std::vector<uint64_t> const             ROW_MASK;
     static std::vector<uint64_t> const             COL_MASK;
     static std::vector<uint64_t> const             BIT_MASK;
-
   };
 }  // namespace libsemigroups
 

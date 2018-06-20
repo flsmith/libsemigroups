@@ -146,4 +146,10 @@ namespace libsemigroups {
     }
     return bm;
   }
+
+  bool BMat8::is_group_index(BMat8 const& x, BMat8 const& y) {
+    LIBSEMIGROUPS_ASSERT(x.col_space_basis() == x && y.row_space_basis() == y);
+    return (y * x).row_space_basis() == x.row_space_basis()
+           && (y * x).col_space_basis() == y.col_space_basis();
+  }
 }  // namespace libsemigroups

@@ -15,11 +15,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <unordered_set>
-#include "catch.hpp"
 #include "../src/timer.h"
+#include "catch.hpp"
+#include <algorithm>
+#include <unordered_set>
 
 #include "../src/bmat8.h"
+#include "../src/semigroups.h"
 
 #define BMAT_REPORT false
 
@@ -291,7 +293,7 @@ TEST_CASE("BMat8 08: row space basis", "[quick][bmat][08]") {
   }
 }
 
-TEST_CASE("BMat 04: col space basis", "[quick][bmat][04]") {
+TEST_CASE("BMat 09: col space basis", "[quick][bmat][09]") {
   BMat8 bm({{0, 1, 1, 1, 0, 1, 0, 1},
             {0, 0, 0, 0, 0, 0, 0, 1},
             {1, 1, 1, 1, 1, 1, 0, 1},
@@ -348,16 +350,14 @@ TEST_CASE("BMat 04: col space basis", "[quick][bmat][04]") {
   }
 }
 
-
 TEST_CASE("BMat8 09: row space basis", "[quick][bmat][09]") {
-
-  Timer t;
-  const std::vector<BMat8> gens =
-    { BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
-      BMat8({{0, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
-      BMat8({{0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {1, 0, 0, 0}}),
-      BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 1}}),
-      BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 0}}) };
+  Timer                    t;
+  const std::vector<BMat8> gens
+      = {BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat8({{0, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat8({{0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {1, 0, 0, 0}}),
+         BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 1}}),
+         BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 0}})};
 
   int lg = 0;
   using std::unordered_set;
@@ -381,5 +381,53 @@ TEST_CASE("BMat8 09: row space basis", "[quick][bmat][09]") {
     //     << ", #Bucks = " << res.bucket_count() << std::endl;
   }
   // std::cout << "res =  " << res.size() << std::endl;
-  std::cout << t;
+  // std::cout << t;
+}
+
+TEST_CASE("BMat8 08: is_group_index", "[quick][bmat][10]") {
+  BMat8 idem1 = BMat8::one();
+  BMat8 idem2 = BMat8::one();
+  BMat8 one   = BMat8::one();
+  BMat8 zero  = BMat8(0);
+
+  REQUIRE(BMat8::is_group_index(one, one));
+  for (size_t i = 0; i < 7; ++i) {
+    idem1.set(i, i, false);
+    idem2.set(7 - i, 7 - i, false);
+    REQUIRE(BMat8::is_group_index(idem1, idem1));
+    REQUIRE(BMat8::is_group_index(idem2, idem2));
+
+    REQUIRE(!BMat8::is_group_index(idem1, one));
+    REQUIRE(!BMat8::is_group_index(idem2, one));
+    REQUIRE(!BMat8::is_group_index(idem1, idem2));
+    REQUIRE(!BMat8::is_group_index(idem1, zero));
+    REQUIRE(!BMat8::is_group_index(idem2, zero));
+  }
+  REQUIRE(BMat8::is_group_index(zero, zero));
+  REQUIRE(!BMat8::is_group_index(one, zero));
+
+  const std::vector<BMat8> gens
+      = {BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat8({{0, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat8({{0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {1, 0, 0, 0}}),
+         BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 0}})};
+
+  Semigroup<BMat8> S(gens);
+  REQUIRE(S.size() == 209);
+  REQUIRE(S.nridempotents() == 16);
+
+  std::vector<std::vector<BMat8>> group_indices;
+  for (auto it = S.begin(); it < S.end(); it++) {
+    for (auto it2 = S.begin(); it2 < S.end(); it2++) {
+      std::vector<BMat8> vec = std::vector<BMat8>(
+          {(*it).col_space_basis(), (*it2).row_space_basis()});
+      if (BMat8::is_group_index(vec[0], vec[1])) {
+        if (std::find(group_indices.begin(), group_indices.end(), vec)
+            == group_indices.end()) {
+          group_indices.push_back(vec);
+        }
+      }
+    }
+  }
+  REQUIRE(group_indices.size() == 16);
 }
