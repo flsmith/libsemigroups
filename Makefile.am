@@ -91,8 +91,6 @@ pkginclude_HEADERS += extern/HPCombi/include/bmat8.hpp
 pkginclude_HEADERS += extern/HPCombi/include/bmat8_impl.hpp
 pkginclude_HEADERS += extern/HPCombi/include/epu.hpp
 pkginclude_HEADERS += extern/HPCombi/include/epu_impl.hpp
-pkginclude_HEADERS += extern/HPCombi/include/fallback/gcdlcm.hpp
-pkginclude_HEADERS += extern/HPCombi/include/fallback/seq.hpp
 pkginclude_HEADERS += extern/HPCombi/include/hpcombi.hpp
 pkginclude_HEADERS += extern/HPCombi/include/perm16.hpp
 pkginclude_HEADERS += extern/HPCombi/include/perm16_impl.hpp
@@ -102,6 +100,8 @@ pkginclude_HEADERS += extern/HPCombi/include/power.hpp
 pkginclude_HEADERS += extern/HPCombi/include/testtools.hpp
 pkginclude_HEADERS += extern/HPCombi/include/vect16.hpp
 pkginclude_HEADERS += extern/HPCombi/include/vect_generic.hpp
+pkginclude_HEADERS += extern/HPCombi/include/fallback/gcdlcm.hpp
+pkginclude_HEADERS += extern/HPCombi/include/fallback/seq.hpp
 endif
 
 pkginclude_HEADERS += extern/fmt-5.3.0/include/fmt/chrono.h  
