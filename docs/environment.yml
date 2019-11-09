@@ -1,17 +1,7 @@
-name: libsemigroups-docs
+name: libsemigroups
 
 channels:
-  - anaconda
-  - conda-forge
   - eumetsat
 
 dependencies:
-  - breathe
-  - beautifulsoup4
-  - doxygen
   - expect
-  - lxml 
-  - sphinx
-  - sphinx_rtd_theme 
-  - sphinx-copybutton 
-  - sphinxcontrib-bibtex

@@ -8,8 +8,11 @@ libsemigroups - Version 1.0.0
 =============================
 
 .. image:: https://readthedocs.org/projects/libsemigroups/badge/?version=master
-:target: https://libsemigroups.readthedocs.io/en/devel/?badge=master
-:alt: Documentation Status
+    :target: https://libsemigroups.readthedocs.io/en/devel/?badge=master
+    :alt: Documentation Status
+
+.. image:: https://travis-ci.org/libsemigroups/libsemigroups.svg?branch=master
+    :target: https://travis-ci.org/libsemigroups/libsemigroups
 
 C++ library for semigroups and monoids
 --------------------------------------
