@@ -8,7 +8,7 @@ import sphinx_rtd_theme
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 if on_rtd:
     subprocess.call(
-        "cd ../../ && etc/make-doc-yml.sh",
+        "cd .. && doxygen && etc/make-doc-yml.sh",
         shell=True,
     )
 

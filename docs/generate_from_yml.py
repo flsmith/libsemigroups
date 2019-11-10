@@ -48,7 +48,6 @@ def _time_since_epoch_to_human(n):
 
 
 def run_doxygen():
-    return True
     if not os.path.exists("build/xml"):
         _info("Running doxygen, build/xml does not exist")
         return True
