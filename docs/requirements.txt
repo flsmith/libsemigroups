@@ -2,7 +2,7 @@ bs4
 lxml 
 breathe 
 pyyaml 
-sphinx
 sphinx_rtd_theme 
+sphinx>=2.0
 sphinx_copybutton 
 sphinxcontrib-bibtex
