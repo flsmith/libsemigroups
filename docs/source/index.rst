@@ -7,6 +7,8 @@ C++ library for semigroups and monoids
 What is ``libsemigroups``?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+XXX
+
 ``libsemigroups``  is a C++11 library containing implementations of several
 algorithms for computing finite and finitely presented semigroups. Namely:
 
