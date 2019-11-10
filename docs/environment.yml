@@ -1,7 +1,0 @@
-name: libsemigroups
-
-channels:
-  - eumetsat
-
-dependencies:
-  - expect

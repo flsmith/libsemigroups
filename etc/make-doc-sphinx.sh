@@ -1,9 +1,17 @@
 #!/bin/bash
 set -e
 
+if [[ -x "$(command -v unbuffer)" ]]; then
+  UNBUF="unbuffer"
+  UNBUF_P="unbuffer -p"
+else 
+  UNBUF=
+  UNBUF_P=
+fi
+
 cd docs/
 mkdir -p source/_static
-unbuffer make html-no-doxy 2>&1 | unbuffer -p grep -v --color=always "WARNING: Duplicate declaration\|WARNING: Inline emphasis start-string without end-string.\|WARNING: Too many template argument lists compared to parameter lists\|^\s*libsemigroups\|Citation .* is not referenced"
+$UNBUF make html-no-doxy 2>&1 | $UNBUF_P grep -v --color=always "WARNING: Duplicate declaration\|WARNING: Inline emphasis start-string without end-string.\|WARNING: Too many template argument lists compared to parameter lists\|^\s*libsemigroups\|Citation .* is not referenced"
 echo "See: docs/build/html/index.html"
 
 # Below is some old postprocessing of the doc
