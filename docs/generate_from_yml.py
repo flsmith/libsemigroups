@@ -44,7 +44,12 @@ def _info(msg, fname=None):
 
 
 def _time_since_epoch_to_human(n):
-    return datetime.datetime.fromtimestamp(n).strftime("%Y-%m-%d %H:%M:%S.%f")
+    try:
+        return datetime.datetime.fromtimestamp(n).strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )
+    except:
+        return "N/A"
 
 
 def run_doxygen():
@@ -199,7 +204,7 @@ def generate_functions_rst(ymlfname):
                     if not rebuild_function_rst_file(ymlfname, rstfname):
                         continue
                     else:
-                        _info('Rebuilding %s ...' % rstfname)
+                        _info("Rebuilding %s ..." % rstfname)
                     out = _COPYRIGHT_NOTICE + rst_section(func)
                     out += rst_doxygen(tnam, classname, func)
                     with open(rstfname, "w") as f:
@@ -217,7 +222,7 @@ def generate_overview_rst(ymlfname):
         ):
             return
         else:
-            _info('Rebuilding %s ...' % rst_overview_filename(onam))
+            _info("Rebuilding %s ..." % rst_overview_filename(onam))
         header_written = False
         out += rst_section(onam[onam.find("::") + 2 :])
         if ymldic[onam] is not None:
