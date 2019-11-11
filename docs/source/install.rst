@@ -136,16 +136,15 @@ The following are required to be able to build the documentation:
 
 1. ``python3``
 2. ``doxygen``
-3. ``expect`` (for ``unbuffer``).
-4. the python packages: ``sphinx bs4 lxml breathe pyyaml sphinx_rtd_theme sphinx_copybutton sphinxcontrib-bibtex``
+3. the python packages: ``sphinx bs4 lxml breathe pyyaml sphinx_rtd_theme sphinx_copybutton sphinxcontrib-bibtex``
 
 Assuming you already have ``python3`` install, on Mac OSX you can install all of
 the above by doing:
 
 ::
 
-    brew install doxygen expect sphinx 
-    pip3 install sphinx bs4 lxml breathe pyyaml sphinx_rtd_theme sphinx-copybutton sphinxcontrib-bibtex
+    brew install doxygen sphinx 
+    pip3 install -r docs/requirements 
 
 .. TODO add ubuntu instructions
 
