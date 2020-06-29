@@ -89,23 +89,18 @@ namespace libsemigroups {
     return y;
   }
 
-  // TODO: replace these once we know what we're doing!
-  typedef BMat8 TempElementType;
-  typedef BMat8 LambdaType;
-  typedef BMat8 RhoType;
-
-  template <typename TempElementType = BMat8,
+  template <typename TElementType = BMat8,
             typename LambdaType      = BMat8,
             typename RhoType         = BMat8>
   class Konieczny {
-    using lambda_action_type = ImageRightAction<TempElementType, LambdaType>;
-    using rho_action_type    = ImageLeftAction<TempElementType, RhoType>;
+    using lambda_action_type = ImageRightAction<TElementType, LambdaType>;
+    using rho_action_type    = ImageLeftAction<TElementType, RhoType>;
     using lambda_orb_type
-        = RightAction<TempElementType, LambdaType, lambda_action_type>;
-    using rho_orb_type = LeftAction<TempElementType, RhoType, rho_action_type>;
+        = RightAction<TElementType, LambdaType, lambda_action_type>;
+    using rho_orb_type = LeftAction<TElementType, RhoType, rho_action_type>;
 
    public:
-    explicit Konieczny(std::vector<TempElementType> const& gens)
+    explicit Konieczny(std::vector<TElementType> const& gens)
         : _rho_orb(),
           _D_classes(),
           _D_rels(),
@@ -122,9 +117,9 @@ namespace libsemigroups {
     ~Konieczny();
 
     //! Finds a group index of a H class in the R class of \p bm
-    size_t find_group_index(TempElementType bm) {
-      RhoType rv          = Rho<TempElementType>()(bm);
-      size_t  pos         = _lambda_orb.position(Lambda<TempElementType>()(bm));
+    size_t find_group_index(TElementType bm) {
+      RhoType rv          = Rho<TElementType>()(bm);
+      size_t  pos         = _lambda_orb.position(Lambda<TElementType>()(bm));
       size_t  lval_scc_id = _lambda_orb.digraph().scc_id(pos);
       std::pair<size_t, size_t> key = std::make_pair(
           ToInt<RhoType>()(rv), _lambda_orb.digraph().scc_id(pos));
@@ -145,7 +140,7 @@ namespace libsemigroups {
       return UNDEFINED;
     }
 
-    bool is_regular_element(TempElementType bm) {
+    bool is_regular_element(TElementType bm) {
       if (find_group_index(bm) != UNDEFINED) {
         return true;
       }
@@ -153,8 +148,8 @@ namespace libsemigroups {
     }
 
     // TODO: it must be possible to do better than this
-    TempElementType idem_in_H_class(TempElementType bm) {
-      TempElementType tmp = bm;
+    TElementType idem_in_H_class(TElementType bm) {
+      TElementType tmp = bm;
       while (tmp * tmp != tmp) {
         tmp = tmp * bm;
       }
@@ -162,7 +157,7 @@ namespace libsemigroups {
     }
 
     //! Finds an idempotent in the D class of \c bm, if \c bm is regular
-    TempElementType find_idem(TempElementType bm) {
+    TElementType find_idem(TElementType bm) {
       if (bm * bm == bm) {
         return bm;
       }
@@ -171,8 +166,8 @@ namespace libsemigroups {
         return BMat8(static_cast<size_t>(UNDEFINED));
       }
       size_t          i   = find_group_index(bm);
-      size_t          pos = _lambda_orb.position(Lambda<TempElementType>()(bm));
-      TempElementType x   = bm * _lambda_orb.multiplier_to_scc_root(pos)
+      size_t          pos = _lambda_orb.position(Lambda<TElementType>()(bm));
+      TElementType x   = bm * _lambda_orb.multiplier_to_scc_root(pos)
                           * _lambda_orb.multiplier_from_scc_root(i);
       // BMat8(UNDEFINED) happens to be idempotent...
       return idem_in_H_class(x);
@@ -194,9 +189,9 @@ namespace libsemigroups {
 
    private:
     void add_D_class(
-        Konieczny<TempElementType, LambdaType, RhoType>::RegularDClass* D);
+        Konieczny<TElementType, LambdaType, RhoType>::RegularDClass* D);
     void add_D_class(
-        Konieczny<TempElementType, LambdaType, RhoType>::NonRegularDClass* D);
+        Konieczny<TElementType, LambdaType, RhoType>::NonRegularDClass* D);
 
     //! Finds the minimum dimension \c dim such that all generators have
     //! dimension less than or equal to \c dim, and sets \c _dim.
@@ -210,7 +205,7 @@ namespace libsemigroups {
       }
     }
 
-    //! Adds the identity TempElementType (of degree max of the degrees of the
+    //! Adds the identity TElementType (of degree max of the degrees of the
     //! generators) if there is no permutation already in the generators, and
     //! sets the value of \c _unit_in_gens.
     void conditional_add_identity() {
@@ -229,7 +224,7 @@ namespace libsemigroups {
     void compute_orbs() {
       _lambda_orb.add_seed(bmat8_helpers::one<BMat8>(_dim));
       _rho_orb.add_seed(bmat8_helpers::one<BMat8>(_dim));
-      for (TempElementType g : _gens) {
+      for (TElementType g : _gens) {
         _lambda_orb.add_generator(g);
         _rho_orb.add_generator(g);
       }
@@ -245,7 +240,7 @@ namespace libsemigroups {
     // _D_classes[i]
     std::vector<std::vector<size_t>> _D_rels;
     size_t                           _dim;
-    std::vector<TempElementType>     _gens;
+    std::vector<TElementType>     _gens;
     std::unordered_map<std::pair<size_t, size_t>, size_t, PairHash>
         _group_indices;
     std::unordered_map<std::pair<size_t, size_t>, size_t, PairHash>
@@ -255,14 +250,14 @@ namespace libsemigroups {
     lambda_orb_type             _lambda_orb;
   };
 
-  template <>
-  class Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
-    friend class Konieczny<TempElementType, LambdaType, RhoType>;
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  class Konieczny<TElementType, LambdaType, RhoType>::BaseDClass {
+    friend class Konieczny<TElementType, LambdaType, RhoType>;
 
    public:
-    BaseDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
-               TempElementType                                  rep)
-        : _rank(KonRank<TempElementType>()(rep)),
+    BaseDClass(Konieczny<TElementType, LambdaType, RhoType>* parent,
+               TElementType                                  rep)
+        : _rank(KonRank<TElementType>()(rep)),
           _computed(false),
           _H_class(),
           _left_mults(),
@@ -276,83 +271,83 @@ namespace libsemigroups {
 
     virtual ~BaseDClass() {}
 
-    TempElementType rep() const {
+    TElementType rep() const {
       return _rep;
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_left_reps() {
+    typename std::vector<TElementType>::const_iterator cbegin_left_reps() {
       init();
       return _left_reps.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_left_reps() {
+    typename std::vector<TElementType>::const_iterator cend_left_reps() {
       init();
       return _left_reps.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_right_reps() {
+    typename std::vector<TElementType>::const_iterator cbegin_right_reps() {
       init();
       return _right_reps.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_right_reps() {
+    typename std::vector<TElementType>::const_iterator cend_right_reps() {
       init();
       return _right_reps.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_left_mults() {
+    typename std::vector<TElementType>::const_iterator cbegin_left_mults() {
       init();
       return _left_mults.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_left_mults() {
+    typename std::vector<TElementType>::const_iterator cend_left_mults() {
       init();
       return _left_mults.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_left_mults_inv() {
+    typename std::vector<TElementType>::const_iterator cbegin_left_mults_inv() {
       init();
       return _left_mults_inv.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_left_mults_inv() {
+    typename std::vector<TElementType>::const_iterator cend_left_mults_inv() {
       init();
       return _left_mults_inv.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_right_mults() {
+    typename std::vector<TElementType>::const_iterator cbegin_right_mults() {
       init();
       return _right_mults.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_right_mults() {
+    typename std::vector<TElementType>::const_iterator cend_right_mults() {
       init();
       return _right_mults.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_right_mults_inv() {
+    typename std::vector<TElementType>::const_iterator cbegin_right_mults_inv() {
       init();
       return _right_mults_inv.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_right_mults_inv() {
+    typename std::vector<TElementType>::const_iterator cend_right_mults_inv() {
       init();
       return _right_mults_inv.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_H_class() {
+    typename std::vector<TElementType>::const_iterator cbegin_H_class() {
       init();
       return _H_class.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_H_class() {
+    typename std::vector<TElementType>::const_iterator cend_H_class() {
       init();
       return _H_class.cend();
     }
 
-    virtual bool contains(TempElementType bm) = 0;
+    virtual bool contains(TElementType bm) = 0;
 
-    bool contains(TempElementType bm, size_t rank) {
+    bool contains(TElementType bm, size_t rank) {
       return (rank == _rank && contains(bm));
     }
 
@@ -361,23 +356,23 @@ namespace libsemigroups {
       return _H_class.size() * _left_reps.size() * _right_reps.size();
     }
 
-    std::vector<TempElementType> covering_reps() {
+    std::vector<TElementType> covering_reps() {
       init();
-      std::vector<TempElementType> out;
+      std::vector<TElementType> out;
       // TODO: how to decide which side to calculate? One is often faster
       if (_parent->_lambda_orb.size() < _parent->_rho_orb.size()) {
-        for (TempElementType w : _left_reps) {
-          for (TempElementType g : _parent->_gens) {
-            TempElementType x = w * g;
+        for (TElementType w : _left_reps) {
+          for (TElementType g : _parent->_gens) {
+            TElementType x = w * g;
             if (!contains(x)) {
               out.push_back(x);
             }
           }
         }
       } else {
-        for (TempElementType z : _right_reps) {
-          for (TempElementType g : _parent->_gens) {
-            TempElementType x = g * z;
+        for (TElementType z : _right_reps) {
+          for (TElementType g : _parent->_gens) {
+            TElementType x = g * z;
             if (!contains(x)) {
               out.push_back(x);
             }
@@ -395,24 +390,24 @@ namespace libsemigroups {
 
     size_t                                           _rank;
     bool                                             _computed;
-    std::vector<TempElementType>                     _H_class;
-    std::vector<TempElementType>                     _left_mults;
-    std::vector<TempElementType>                     _left_mults_inv;
-    std::vector<TempElementType>                     _left_reps;
-    Konieczny<TempElementType, LambdaType, RhoType>* _parent;
-    TempElementType                                  _rep;
-    std::vector<TempElementType>                     _right_mults;
-    std::vector<TempElementType>                     _right_mults_inv;
-    std::vector<TempElementType>                     _right_reps;
+    std::vector<TElementType>                     _H_class;
+    std::vector<TElementType>                     _left_mults;
+    std::vector<TElementType>                     _left_mults_inv;
+    std::vector<TElementType>                     _left_reps;
+    Konieczny<TElementType, LambdaType, RhoType>* _parent;
+    TElementType                                  _rep;
+    std::vector<TElementType>                     _right_mults;
+    std::vector<TElementType>                     _right_mults_inv;
+    std::vector<TElementType>                     _right_reps;
   };
 
-  template <>
-  class Konieczny<TempElementType, LambdaType, RhoType>::RegularDClass
-      : public Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  class Konieczny<TElementType, LambdaType, RhoType>::RegularDClass
+      : public Konieczny<TElementType, LambdaType, RhoType>::BaseDClass<TElementType, LambdaType, RhoType> {
    public:
-    RegularDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
-                  TempElementType                                  idem_rep)
-        : Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass(parent,
+    RegularDClass(Konieczny<TElementType, LambdaType, RhoType>* parent,
+                  TElementType                                  idem_rep)
+        : Konieczny<TElementType, LambdaType, RhoType>::BaseDClass(parent,
                                                                       idem_rep),
           _rho_val_positions(),
           _H_gens(),
@@ -448,22 +443,22 @@ namespace libsemigroups {
       return _right_indices.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_left_idem_reps() {
+    typename std::vector<TElementType>::const_iterator cbegin_left_idem_reps() {
       init();
       return _left_idem_reps.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_left_idem_reps() {
+    typename std::vector<TElementType>::const_iterator cend_left_idem_reps() {
       init();
       return _left_idem_reps.cend();
     }
 
-    std::vector<TempElementType>::const_iterator cbegin_right_idem_reps() {
+    typename std::vector<TElementType>::const_iterator cbegin_right_idem_reps() {
       init();
       return _right_idem_reps.cbegin();
     }
 
-    std::vector<TempElementType>::const_iterator cend_right_idem_reps() {
+    typename std::vector<TElementType>::const_iterator cend_right_idem_reps() {
       init();
       return _right_idem_reps.cend();
     }
@@ -481,7 +476,7 @@ namespace libsemigroups {
     //!
     //! Watch out! The element \bm must be known to be in the semigroup for this
     //! to be valid!
-    bool contains(TempElementType bm) override {
+    bool contains(TElementType bm) override {
       init();
       std::pair<size_t, size_t> x = index_positions(bm);
       return x.first != UNDEFINED;
@@ -490,13 +485,13 @@ namespace libsemigroups {
     // Returns the indices of the L and R classes of \c this that \p bm is in,
     // unless bm is not in \c this, in which case returns the pair (UNDEFINED,
     // UNDEFINED)
-    std::pair<size_t, size_t> index_positions(TempElementType bm) {
+    std::pair<size_t, size_t> index_positions(TElementType bm) {
       init();
       auto l_it = _lambda_val_positions.find(
-          ToInt<LambdaType>()(Lambda<TempElementType>()(bm)));
+          ToInt<LambdaType>()(Lambda<TElementType>()(bm)));
       if (l_it != _lambda_val_positions.end()) {
         auto r_it = _rho_val_positions.find(
-            ToInt<RhoType>()(Rho<TempElementType>()(bm)));
+            ToInt<RhoType>()(Rho<TElementType>()(bm)));
         if (r_it != _rho_val_positions.end()) {
           return std::make_pair((*l_it).second, (*r_it).second);
         }
@@ -529,9 +524,9 @@ namespace libsemigroups {
         return;
       }
       size_t lval_pos
-          = _parent->_lambda_orb.position(Lambda<TempElementType>()(_rep));
+          = _parent->_lambda_orb.position(Lambda<TElementType>()(_rep));
       size_t rval_pos
-          = _parent->_rho_orb.position(Rho<TempElementType>()(_rep));
+          = _parent->_rho_orb.position(Rho<TElementType>()(_rep));
       size_t lval_scc_id = _parent->_lambda_orb.digraph().scc_id(lval_pos);
       size_t rval_scc_id = _parent->_rho_orb.digraph().scc_id(rval_pos);
 
@@ -576,12 +571,12 @@ namespace libsemigroups {
         return;
       }
       size_t rval_pos
-          = _parent->_rho_orb.position(Rho<TempElementType>()(_rep));
+          = _parent->_rho_orb.position(Rho<TElementType>()(_rep));
       size_t rval_scc_id = _parent->_rho_orb.digraph().scc_id(rval_pos);
       for (auto it = _parent->_rho_orb.digraph().cbegin_scc(rval_scc_id);
            it < _parent->_rho_orb.digraph().cend_scc(rval_scc_id);
            it++) {
-        TempElementType x = _parent->_rho_orb.multiplier_from_scc_root(*it)
+        TElementType x = _parent->_rho_orb.multiplier_from_scc_root(*it)
                             * _parent->_rho_orb.multiplier_to_scc_root(rval_pos)
                             * _rep;
         if (_parent->find_group_index(x) != UNDEFINED) {
@@ -602,16 +597,16 @@ namespace libsemigroups {
       if (_left_mults.size() > 0) {
         return;
       }
-      TempElementType lval     = Lambda<TempElementType>()(_rep);
+      TElementType lval     = Lambda<TElementType>()(_rep);
       size_t          lval_pos = _parent->_lambda_orb.position(lval);
-      TempElementType rval     = Rho<TempElementType>()(_rep);
+      TElementType rval     = Rho<TElementType>()(_rep);
       size_t          rval_pos = _parent->_rho_orb.position(rval);
 
       for (size_t i = 0; i < _left_indices.size(); ++i) {
-        TempElementType b
+        TElementType b
             = _parent->_lambda_orb.multiplier_to_scc_root(lval_pos)
               * _parent->_lambda_orb.multiplier_from_scc_root(_left_indices[i]);
-        TempElementType c
+        TElementType c
             = _parent->_lambda_orb.multiplier_to_scc_root(_left_indices[i])
               * _parent->_lambda_orb.multiplier_from_scc_root(lval_pos);
 
@@ -620,10 +615,10 @@ namespace libsemigroups {
       }
 
       for (size_t i = 0; i < _right_indices.size(); ++i) {
-        TempElementType c
+        TElementType c
             = _parent->_rho_orb.multiplier_from_scc_root(_right_indices[i])
               * _parent->_rho_orb.multiplier_to_scc_root(rval_pos);
-        TempElementType d
+        TElementType d
             = _parent->_rho_orb.multiplier_from_scc_root(rval_pos)
               * _parent->_rho_orb.multiplier_to_scc_root(_right_indices[i]);
 
@@ -638,41 +633,41 @@ namespace libsemigroups {
       _left_reps.clear();
       _right_reps.clear();
 
-      for (TempElementType b : _left_mults) {
+      for (TElementType b : _left_mults) {
         _left_reps.push_back(_rep * b);
       }
 
-      for (TempElementType c : _right_mults) {
+      for (TElementType c : _right_mults) {
         _right_reps.push_back(c * _rep);
       }
     }
 
     void compute_H_gens() {
       _H_gens.clear();
-      TempElementType rval     = Rho<TempElementType>()(_rep);
+      TElementType rval     = Rho<TElementType>()(_rep);
       size_t          rval_pos = _parent->_rho_orb.position(rval);
       size_t rval_scc_id       = _parent->_rho_orb.digraph().scc_id(rval_pos);
-      std::vector<TempElementType> right_invs;
+      std::vector<TElementType> right_invs;
 
       for (size_t i = 0; i < _left_indices.size(); ++i) {
-        TempElementType           p = _left_reps[i];
+        TElementType           p = _left_reps[i];
         std::pair<size_t, size_t> key
             = std::make_pair(rval_scc_id, _left_indices[i]);
 
         size_t k = _parent->_group_indices_alt.at(key);
         size_t j
             = _rho_val_positions.at(ToInt<RhoType>()(_parent->_rho_orb.at(k)));
-        TempElementType q = _right_reps[j];
+        TElementType q = _right_reps[j];
         // find the inverse of pq in H_rep
-        TempElementType y = group_inverse<TempElementType>(_rep, p * q);
+        TElementType y = group_inverse<TElementType>(_rep, p * q);
         right_invs.push_back(q * y);
       }
 
       for (size_t i = 0; i < _left_indices.size(); ++i) {
-        TempElementType p = _left_reps[i];
-        for (TempElementType g : _parent->_gens) {
-          TempElementType x = p * g;
-          TempElementType s = Lambda<TempElementType>()(x);
+        TElementType p = _left_reps[i];
+        for (TElementType g : _parent->_gens) {
+          TElementType x = p * g;
+          TElementType s = Lambda<TElementType>()(x);
           for (size_t j = 0; j < _left_indices.size(); ++j) {
             if (_parent->_lambda_orb.at(_left_indices[j]) == s) {
               _H_gens.push_back(x * right_invs[j]);
@@ -681,7 +676,7 @@ namespace libsemigroups {
           }
         }
       }
-      std::unordered_set<TempElementType> set(_H_gens.begin(), _H_gens.end());
+      std::unordered_set<TElementType> set(_H_gens.begin(), _H_gens.end());
       _H_gens.assign(set.begin(), set.end());
     }
 
@@ -695,8 +690,8 @@ namespace libsemigroups {
     */
 
     void compute_idem_reps() {
-      TempElementType lval     = Lambda<TempElementType>()(_rep);
-      TempElementType rval     = Rho<TempElementType>()(_rep);
+      TElementType lval     = Lambda<TElementType>()(_rep);
+      TElementType rval     = Rho<TElementType>()(_rep);
       size_t          lval_pos = _parent->_lambda_orb.position(lval);
       size_t          rval_pos = _parent->_rho_orb.position(rval);
       size_t lval_scc_id = _parent->_lambda_orb.digraph().scc_id(lval_pos);
@@ -714,8 +709,8 @@ namespace libsemigroups {
         while (_right_indices[j] != k) {
           ++j;
         }
-        TempElementType x = _right_mults[j] * _rep * _left_mults[i];
-        TempElementType y = x;
+        TElementType x = _right_mults[j] * _rep * _left_mults[i];
+        TElementType y = x;
         // TODO: BMat8(UNDEFINED) happens to be idempotent... genericise!
         while (x * x != x) {
           x = x * y;
@@ -733,8 +728,8 @@ namespace libsemigroups {
         while (_left_indices[i] != k) {
           ++i;
         }
-        TempElementType x = _right_mults[j] * _rep * _left_mults[i];
-        TempElementType y = x;
+        TElementType x = _right_mults[j] * _rep * _left_mults[i];
+        TElementType y = x;
         // TODO: BMat8(UNDEFINED) happens to be idempotent... genericise!
         while (x * x != x) {
           x = x * y;
@@ -745,11 +740,11 @@ namespace libsemigroups {
 
     // there should be some way of getting rid of this
     void compute_H_class() {
-      _H_class = std::vector<TempElementType>(_H_gens.begin(), _H_gens.end());
-      std::unordered_set<TempElementType> set(_H_class.begin(), _H_class.end());
+      _H_class = std::vector<TElementType>(_H_gens.begin(), _H_gens.end());
+      std::unordered_set<TElementType> set(_H_class.begin(), _H_class.end());
       for (size_t i = 0; i < _H_class.size(); ++i) {
-        for (TempElementType g : _H_gens) {
-          TempElementType y = _H_class[i] * g;
+        for (TElementType g : _H_gens) {
+          TElementType y = _H_class[i] * g;
           if (set.find(y) == set.end()) {
             set.insert(y);
             _H_class.push_back(y);
@@ -774,24 +769,24 @@ namespace libsemigroups {
     }
 
     std::unordered_map<size_t, size_t>             _rho_val_positions;
-    std::vector<TempElementType>                   _H_gens;
-    std::vector<TempElementType>                   _left_idem_reps;
+    std::vector<TElementType>                   _H_gens;
+    std::vector<TElementType>                   _left_idem_reps;
     std::vector<size_t>                            _left_indices;
-    std::vector<TempElementType>                   _right_idem_reps;
+    std::vector<TElementType>                   _right_idem_reps;
     std::vector<size_t>                            _right_indices;
     std::unordered_map<size_t, size_t>             _lambda_val_positions;
     SchreierSims<8, uint8_t, Permutation<uint8_t>> _stab_chain;
   };
 
-  template <>
-  class Konieczny<TempElementType, LambdaType, RhoType>::NonRegularDClass
-      : public Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
-    friend class Konieczny<TempElementType, LambdaType, RhoType>;
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  class Konieczny<TElementType, LambdaType, RhoType>::NonRegularDClass
+      : public Konieczny<TElementType, LambdaType, RhoType>::BaseDClass {
+    friend class Konieczny<TElementType, LambdaType, RhoType>;
 
    public:
-    NonRegularDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
-                     TempElementType                                  rep)
-        : Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass(parent,
+    NonRegularDClass(Konieczny<TElementType, LambdaType, RhoType>* parent,
+                     TElementType                                  rep)
+        : Konieczny<TElementType, LambdaType, RhoType>::BaseDClass(parent,
                                                                       rep),
           _rho_val_positions(),
           _left_idem_above(),
@@ -806,13 +801,13 @@ namespace libsemigroups {
       }
     }
 
-    bool contains(TempElementType bm) override {
+    bool contains(TElementType bm) override {
       init();
-      size_t x = ToInt<LambdaType>()(Lambda<TempElementType>()(bm));
+      size_t x = ToInt<LambdaType>()(Lambda<TElementType>()(bm));
       if (_lambda_val_positions[x].size() == 0) {
         return false;
       }
-      size_t y = ToInt<RhoType>()(Rho<TempElementType>()(bm));
+      size_t y = ToInt<RhoType>()(Rho<TElementType>()(bm));
       for (size_t i : _lambda_val_positions[x]) {
         for (size_t j : _rho_val_positions[y]) {
           if (_H_set.find(_right_mults_inv[j] * bm * _left_mults_inv[i])
@@ -881,27 +876,27 @@ namespace libsemigroups {
 
     // TODO: this computes more than just the H class, and should be split
     void compute_H_class() {
-      _H_class = std::vector<TempElementType>();
+      _H_class = std::vector<TElementType>();
       std::pair<size_t, size_t> left_idem_indices
           = _left_idem_class->index_positions(_left_idem_above);
-      TempElementType left_idem_left_mult
+      TElementType left_idem_left_mult
           = _left_idem_class
                 ->cbegin_left_mults()[std::get<0>(left_idem_indices)];
-      TempElementType left_idem_right_mult
+      TElementType left_idem_right_mult
           = _left_idem_class
                 ->cbegin_right_mults()[std::get<1>(left_idem_indices)];
 
       std::pair<size_t, size_t> right_idem_indices
           = _right_idem_class->index_positions(_right_idem_above);
-      TempElementType right_idem_left_mult
+      TElementType right_idem_left_mult
           = _right_idem_class
                 ->cbegin_left_mults()[std::get<0>(right_idem_indices)];
-      TempElementType right_idem_right_mult
+      TElementType right_idem_right_mult
           = _right_idem_class
                 ->cbegin_right_mults()[std::get<1>(right_idem_indices)];
 
-      std::vector<TempElementType> _left_idem_H_class;
-      std::vector<TempElementType> _right_idem_H_class;
+      std::vector<TElementType> _left_idem_H_class;
+      std::vector<TElementType> _right_idem_H_class;
 
       for (auto it = _left_idem_class->cbegin_H_class();
            it < _left_idem_class->cend_H_class();
@@ -917,8 +912,8 @@ namespace libsemigroups {
                                       * right_idem_left_mult);
       }
 
-      std::vector<TempElementType> left_idem_left_reps;
-      std::vector<TempElementType> right_idem_right_reps;
+      std::vector<TElementType> left_idem_left_reps;
+      std::vector<TElementType> right_idem_right_reps;
 
       for (auto it = _left_idem_class->cbegin_left_mults();
            it < _left_idem_class->cend_left_mults();
@@ -934,21 +929,21 @@ namespace libsemigroups {
                                         * right_idem_left_mult);
       }
 
-      std::vector<TempElementType> Hex;
-      std::vector<TempElementType> xHf;
+      std::vector<TElementType> Hex;
+      std::vector<TElementType> xHf;
 
-      for (TempElementType s : _left_idem_H_class) {
+      for (TElementType s : _left_idem_H_class) {
         xHf.push_back(_rep * s);
       }
 
-      for (TempElementType t : _right_idem_H_class) {
+      for (TElementType t : _right_idem_H_class) {
         Hex.push_back(t * _rep);
       }
 
-      std::unordered_set<TempElementType> s(Hex.begin(), Hex.end());
+      std::unordered_set<TElementType> s(Hex.begin(), Hex.end());
       Hex.assign(s.begin(), s.end());
 
-      s = std::unordered_set<TempElementType>(xHf.begin(), xHf.end());
+      s = std::unordered_set<TElementType>(xHf.begin(), xHf.end());
       xHf.assign(s.begin(), s.end());
 
       std::sort(Hex.begin(), Hex.end());
@@ -959,7 +954,7 @@ namespace libsemigroups {
                             xHf.begin(),
                             xHf.end(),
                             std::back_inserter(_H_class));
-      for (TempElementType x : _H_class) {
+      for (TElementType x : _H_class) {
         _H_set.insert(x);
       }
 
@@ -972,31 +967,31 @@ namespace libsemigroups {
       _right_reps.clear();
       _right_mults.clear();
 
-      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>>
+      std::unordered_set<std::vector<TElementType>, VecHash<TElementType>>
           Hxhw_set;
-      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>>
+      std::unordered_set<std::vector<TElementType>, VecHash<TElementType>>
           zhHx_set;
 
-      for (TempElementType h : _left_idem_H_class) {
+      for (TElementType h : _left_idem_H_class) {
         for (size_t i = 0; i < left_idem_left_reps.size(); ++i) {
-          TempElementType w = left_idem_left_reps[i];
+          TElementType w = left_idem_left_reps[i];
           // TODO: enforce uniqueness here?
-          std::vector<TempElementType> Hxhw;
-          for (TempElementType s : _H_class) {
+          std::vector<TElementType> Hxhw;
+          for (TElementType s : _H_class) {
             Hxhw.push_back(s * h * w);
           }
           std::sort(Hxhw.begin(), Hxhw.end());
           if (Hxhw_set.find(Hxhw) == Hxhw_set.end()) {
             Hxhw_set.insert(Hxhw);
-            TempElementType A = _rep * h * w;
-            TempElementType inv
-                = group_inverse<TempElementType>(
+            TElementType A = _rep * h * w;
+            TElementType inv
+                = group_inverse<TElementType>(
                       _left_idem_above,
                       w * _left_idem_class->cbegin_left_mults_inv()[i]
                           * left_idem_left_mult)
-                  * group_inverse<TempElementType>(_left_idem_above, h);
+                  * group_inverse<TElementType>(_left_idem_above, h);
 
-            size_t x  = ToInt<LambdaType>()(Lambda<TempElementType>()(A));
+            size_t x  = ToInt<LambdaType>()(Lambda<TElementType>()(A));
             auto   it = _lambda_val_positions.find(x);
             if (it == _lambda_val_positions.end()) {
               _lambda_val_positions.emplace(x, std::vector<size_t>());
@@ -1011,26 +1006,26 @@ namespace libsemigroups {
         }
       }
 
-      for (TempElementType h : _right_idem_H_class) {
+      for (TElementType h : _right_idem_H_class) {
         for (size_t i = 0; i < right_idem_right_reps.size(); ++i) {
-          TempElementType              z = right_idem_right_reps[i];
-          std::vector<TempElementType> zhHx;
-          for (TempElementType s : _H_class) {
+          TElementType              z = right_idem_right_reps[i];
+          std::vector<TElementType> zhHx;
+          for (TElementType s : _H_class) {
             zhHx.push_back(z * h * s);
           }
           std::sort(zhHx.begin(), zhHx.end());
           if (zhHx_set.find(zhHx) == zhHx_set.end()) {
             zhHx_set.insert(zhHx);
-            TempElementType B = z * h * _rep;
-            TempElementType inv
-                = group_inverse<TempElementType>(_right_idem_above, h)
-                  * group_inverse<TempElementType>(
+            TElementType B = z * h * _rep;
+            TElementType inv
+                = group_inverse<TElementType>(_right_idem_above, h)
+                  * group_inverse<TElementType>(
                         _right_idem_above,
                         right_idem_right_mult
                             * _right_idem_class->cbegin_right_mults_inv()[i]
                             * z);
 
-            size_t x  = ToInt<RhoType>()(Rho<TempElementType>()(B));
+            size_t x  = ToInt<RhoType>()(Rho<TElementType>()(B));
             auto   it = _rho_val_positions.find(x);
             if (it == _rho_val_positions.end()) {
               _rho_val_positions.emplace(x, std::vector<size_t>());
@@ -1047,38 +1042,38 @@ namespace libsemigroups {
     }
 
     std::unordered_map<size_t, std::vector<size_t>> _rho_val_positions;
-    TempElementType                                 _left_idem_above;
+    TElementType                                 _left_idem_above;
     RegularDClass*                                  _left_idem_class;
-    std::unordered_set<TempElementType>             _H_set;
-    TempElementType                                 _right_idem_above;
+    std::unordered_set<TElementType>             _H_set;
+    TElementType                                 _right_idem_above;
     RegularDClass*                                  _right_idem_class;
     std::unordered_map<size_t, std::vector<size_t>> _lambda_val_positions;
   };
 
-  template <typename TempElementType, typename LambdaType, typename RhoType>
-  Konieczny<TempElementType, LambdaType, RhoType>::~Konieczny() {
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  Konieczny<TElementType, LambdaType, RhoType>::~Konieczny() {
     for (BaseDClass* D : _D_classes) {
       delete D;
     }
   }
 
-  template <typename TempElementType, typename LambdaType, typename RhoType>
-  void Konieczny<TempElementType, LambdaType, RhoType>::add_D_class(
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TElementType, LambdaType, RhoType>::add_D_class(
       Konieczny::RegularDClass* D) {
     _regular_D_classes.push_back(D);
     _D_classes.push_back(D);
     _D_rels.push_back(std::vector<size_t>());
   }
 
-  template <typename TempElementType, typename LambdaType, typename RhoType>
-  void Konieczny<TempElementType, LambdaType, RhoType>::add_D_class(
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TElementType, LambdaType, RhoType>::add_D_class(
       Konieczny::NonRegularDClass* D) {
     _D_classes.push_back(D);
     _D_rels.push_back(std::vector<size_t>());
   }
 
-  template <typename TempElementType, typename LambdaType, typename RhoType>
-  size_t Konieczny<TempElementType, LambdaType, RhoType>::size() const {
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  size_t Konieczny<TElementType, LambdaType, RhoType>::size() const {
     size_t out = 0;
     auto   it  = _D_classes.begin();
     if (!_unit_in_gens) {
@@ -1090,16 +1085,16 @@ namespace libsemigroups {
     return out;
   }
 
-  template <typename TempElementType, typename LambdaType, typename RhoType>
-  void Konieczny<TempElementType, LambdaType, RhoType>::compute_D_classes() {
+  template <typename TElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TElementType, LambdaType, RhoType>::compute_D_classes() {
     conditional_add_identity();
     compute_orbs();
 
     // TODO: genericise
-    std::vector<std::vector<std::pair<TempElementType, size_t>>> reg_reps(
-        257, std::vector<std::pair<TempElementType, size_t>>());
-    std::vector<std::vector<std::pair<TempElementType, size_t>>> non_reg_reps(
-        257, std::vector<std::pair<TempElementType, size_t>>());
+    std::vector<std::vector<std::pair<TElementType, size_t>>> reg_reps(
+        257, std::vector<std::pair<TElementType, size_t>>());
+    std::vector<std::vector<std::pair<TElementType, size_t>>> non_reg_reps(
+        257, std::vector<std::pair<TElementType, size_t>>());
     // TODO: reserve?
     std::set<size_t> ranks;
     size_t           max_rank = 0;
@@ -1110,8 +1105,8 @@ namespace libsemigroups {
     RegularDClass* top
         = new RegularDClass(this, bmat8_helpers::one<BMat8>(_dim));
     add_D_class(top);
-    for (TempElementType x : top->covering_reps()) {
-      size_t rank = KonRank<TempElementType>()(x);
+    for (TElementType x : top->covering_reps()) {
+      size_t rank = KonRank<TElementType>()(x);
       ranks.insert(rank);
       if (is_regular_element(x)) {
         reg_reps[rank].push_back(std::make_pair(x, 0));
@@ -1122,7 +1117,7 @@ namespace libsemigroups {
 
     while (*ranks.rbegin() > 0) {
       size_t                                          reps_are_reg = false;
-      std::vector<std::pair<TempElementType, size_t>> next_reps;
+      std::vector<std::pair<TElementType, size_t>> next_reps;
 
       max_rank = *ranks.rbegin();
       if (!reg_reps[max_rank].empty()) {
@@ -1134,7 +1129,7 @@ namespace libsemigroups {
         non_reg_reps[max_rank].clear();
       }
 
-      std::vector<std::pair<TempElementType, size_t>> tmp_next;
+      std::vector<std::pair<TElementType, size_t>> tmp_next;
       for (auto it = next_reps.begin(); it < next_reps.end(); it++) {
         bool contained = false;
         for (size_t i = 0; i < _D_classes.size(); ++i) {
@@ -1152,14 +1147,14 @@ namespace libsemigroups {
 
       while (!next_reps.empty()) {
         BaseDClass*                         D;
-        std::tuple<TempElementType, size_t> tup;
+        std::tuple<TElementType, size_t> tup;
 
         if (reps_are_reg) {
           tup = next_reps.back();
           D   = new RegularDClass(this, find_idem(std::get<0>(tup)));
           add_D_class(static_cast<RegularDClass*>(D));
-          for (TempElementType x : D->covering_reps()) {
-            size_t rank = KonRank<TempElementType>()(x);
+          for (TElementType x : D->covering_reps()) {
+            size_t rank = KonRank<TElementType>()(x);
             ranks.insert(rank);
             if (is_regular_element(x)) {
               reg_reps[rank].push_back(
@@ -1175,8 +1170,8 @@ namespace libsemigroups {
           tup = next_reps.back();
           D   = new NonRegularDClass(this, std::get<0>(tup));
           add_D_class(static_cast<NonRegularDClass*>(D));
-          for (TempElementType x : D->covering_reps()) {
-            size_t rank = KonRank<TempElementType>()(x);
+          for (TElementType x : D->covering_reps()) {
+            size_t rank = KonRank<TElementType>()(x);
             ranks.insert(rank);
             if (is_regular_element(x)) {
               reg_reps[rank].push_back(
@@ -1189,8 +1184,8 @@ namespace libsemigroups {
           next_reps.pop_back();
         }
 
-        std::vector<std::pair<TempElementType, size_t>> tmp;
-        for (std::pair<TempElementType, size_t>& x : next_reps) {
+        std::vector<std::pair<TElementType, size_t>> tmp;
+        for (std::pair<TElementType, size_t>& x : next_reps) {
           if (D->contains(std::get<0>(x))) {
             _D_rels[_D_classes.size() - 1].push_back(std::get<1>(x));
           } else {
