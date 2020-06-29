@@ -78,11 +78,6 @@ namespace libsemigroups {
     }
   };
 
-  using row_action_type = ImageRightAction<BMat8, BMat8>;
-  using col_action_type = ImageLeftAction<BMat8, BMat8>;
-  using lambda_orb_type = RightAction<BMat8, BMat8, row_action_type>;
-  using rho_orb_type    = LeftAction<BMat8, BMat8, col_action_type>;
-
   template <typename TElementType>
   TElementType group_inverse(TElementType id, TElementType bm) {
     TElementType tmp = bm;
@@ -99,7 +94,16 @@ namespace libsemigroups {
   typedef BMat8 LambdaType;
   typedef BMat8 RhoType;
 
+  template <typename TempElementType = BMat8,
+            typename LambdaType      = BMat8,
+            typename RhoType         = BMat8>
   class Konieczny {
+    using lambda_action_type = ImageRightAction<TempElementType, LambdaType>;
+    using rho_action_type    = ImageLeftAction<TempElementType, RhoType>;
+    using lambda_orb_type
+        = RightAction<TempElementType, LambdaType, lambda_action_type>;
+    using rho_orb_type = LeftAction<TempElementType, RhoType, rho_action_type>;
+
    public:
     explicit Konieczny(std::vector<TempElementType> const& gens)
         : _rho_orb(),
@@ -119,8 +123,8 @@ namespace libsemigroups {
 
     //! Finds a group index of a H class in the R class of \p bm
     size_t find_group_index(TempElementType bm) {
-      RhoType rv         = Rho<TempElementType>()(bm);
-      size_t  pos        = _lambda_orb.position(Lambda<TempElementType>()(bm));
+      RhoType rv          = Rho<TempElementType>()(bm);
+      size_t  pos         = _lambda_orb.position(Lambda<TempElementType>()(bm));
       size_t  lval_scc_id = _lambda_orb.digraph().scc_id(pos);
       std::pair<size_t, size_t> key = std::make_pair(
           ToInt<RhoType>()(rv), _lambda_orb.digraph().scc_id(pos));
@@ -189,8 +193,10 @@ namespace libsemigroups {
     size_t size() const;
 
    private:
-    void add_D_class(Konieczny::RegularDClass* D);
-    void add_D_class(Konieczny::NonRegularDClass* D);
+    void add_D_class(
+        Konieczny<TempElementType, LambdaType, RhoType>::RegularDClass* D);
+    void add_D_class(
+        Konieczny<TempElementType, LambdaType, RhoType>::NonRegularDClass* D);
 
     //! Finds the minimum dimension \c dim such that all generators have
     //! dimension less than or equal to \c dim, and sets \c _dim.
@@ -249,11 +255,13 @@ namespace libsemigroups {
     lambda_orb_type             _lambda_orb;
   };
 
-  class Konieczny::BaseDClass {
-    friend class Konieczny;
+  template <>
+  class Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
+    friend class Konieczny<TempElementType, LambdaType, RhoType>;
 
    public:
-    BaseDClass(Konieczny* parent, TempElementType rep)
+    BaseDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
+               TempElementType                                  rep)
         : _rank(KonRank<TempElementType>()(rep)),
           _computed(false),
           _H_class(),
@@ -385,23 +393,27 @@ namespace libsemigroups {
    protected:
     virtual void init() = 0;
 
-    size_t                       _rank;
-    bool                         _computed;
-    std::vector<TempElementType> _H_class;
-    std::vector<TempElementType> _left_mults;
-    std::vector<TempElementType> _left_mults_inv;
-    std::vector<TempElementType> _left_reps;
-    Konieczny*                   _parent;
-    TempElementType              _rep;
-    std::vector<TempElementType> _right_mults;
-    std::vector<TempElementType> _right_mults_inv;
-    std::vector<TempElementType> _right_reps;
+    size_t                                           _rank;
+    bool                                             _computed;
+    std::vector<TempElementType>                     _H_class;
+    std::vector<TempElementType>                     _left_mults;
+    std::vector<TempElementType>                     _left_mults_inv;
+    std::vector<TempElementType>                     _left_reps;
+    Konieczny<TempElementType, LambdaType, RhoType>* _parent;
+    TempElementType                                  _rep;
+    std::vector<TempElementType>                     _right_mults;
+    std::vector<TempElementType>                     _right_mults_inv;
+    std::vector<TempElementType>                     _right_reps;
   };
 
-  class Konieczny::RegularDClass : public Konieczny::BaseDClass {
+  template <>
+  class Konieczny<TempElementType, LambdaType, RhoType>::RegularDClass
+      : public Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
    public:
-    RegularDClass(Konieczny* parent, TempElementType idem_rep)
-        : Konieczny::BaseDClass(parent, idem_rep),
+    RegularDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
+                  TempElementType                                  idem_rep)
+        : Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass(parent,
+                                                                      idem_rep),
           _rho_val_positions(),
           _H_gens(),
           _left_idem_reps(),
@@ -532,7 +544,8 @@ namespace libsemigroups {
             == _parent->_group_indices_alt.end()) {
           bool found = false;
           for (auto it2 = _parent->_rho_orb.digraph().cbegin_scc(rval_scc_id);
-               !found && it2 < _parent->_rho_orb.digraph().cend_scc(rval_scc_id);
+               !found
+               && it2 < _parent->_rho_orb.digraph().cend_scc(rval_scc_id);
                it2++) {
             if (konieczny_helpers::is_group_index(
                     _parent->_rho_orb.at(*it2), _parent->_lambda_orb.at(*it))) {
@@ -770,12 +783,16 @@ namespace libsemigroups {
     SchreierSims<8, uint8_t, Permutation<uint8_t>> _stab_chain;
   };
 
-  class Konieczny::NonRegularDClass : public Konieczny::BaseDClass {
-    friend class Konieczny;
+  template <>
+  class Konieczny<TempElementType, LambdaType, RhoType>::NonRegularDClass
+      : public Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass {
+    friend class Konieczny<TempElementType, LambdaType, RhoType>;
 
    public:
-    NonRegularDClass(Konieczny* parent, TempElementType rep)
-        : Konieczny::BaseDClass(parent, rep),
+    NonRegularDClass(Konieczny<TempElementType, LambdaType, RhoType>* parent,
+                     TempElementType                                  rep)
+        : Konieczny<TempElementType, LambdaType, RhoType>::BaseDClass(parent,
+                                                                      rep),
           _rho_val_positions(),
           _left_idem_above(),
           _left_idem_class(),
@@ -955,9 +972,10 @@ namespace libsemigroups {
       _right_reps.clear();
       _right_mults.clear();
 
-
-      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>> Hxhw_set;
-      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>> zhHx_set;
+      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>>
+          Hxhw_set;
+      std::unordered_set<std::vector<TempElementType>, VecHash<TempElementType>>
+          zhHx_set;
 
       for (TempElementType h : _left_idem_H_class) {
         for (size_t i = 0; i < left_idem_left_reps.size(); ++i) {
@@ -1037,24 +1055,30 @@ namespace libsemigroups {
     std::unordered_map<size_t, std::vector<size_t>> _lambda_val_positions;
   };
 
-  Konieczny::~Konieczny() {
+  template <typename TempElementType, typename LambdaType, typename RhoType>
+  Konieczny<TempElementType, LambdaType, RhoType>::~Konieczny() {
     for (BaseDClass* D : _D_classes) {
       delete D;
     }
   }
 
-  void Konieczny::add_D_class(Konieczny::RegularDClass* D) {
+  template <typename TempElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TempElementType, LambdaType, RhoType>::add_D_class(
+      Konieczny::RegularDClass* D) {
     _regular_D_classes.push_back(D);
     _D_classes.push_back(D);
     _D_rels.push_back(std::vector<size_t>());
   }
 
-  void Konieczny::add_D_class(Konieczny::NonRegularDClass* D) {
+  template <typename TempElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TempElementType, LambdaType, RhoType>::add_D_class(
+      Konieczny::NonRegularDClass* D) {
     _D_classes.push_back(D);
     _D_rels.push_back(std::vector<size_t>());
   }
 
-  size_t Konieczny::size() const {
+  template <typename TempElementType, typename LambdaType, typename RhoType>
+  size_t Konieczny<TempElementType, LambdaType, RhoType>::size() const {
     size_t out = 0;
     auto   it  = _D_classes.begin();
     if (!_unit_in_gens) {
@@ -1066,10 +1090,12 @@ namespace libsemigroups {
     return out;
   }
 
-  void Konieczny::compute_D_classes() {
+  template <typename TempElementType, typename LambdaType, typename RhoType>
+  void Konieczny<TempElementType, LambdaType, RhoType>::compute_D_classes() {
     conditional_add_identity();
     compute_orbs();
 
+    // TODO: genericise
     std::vector<std::vector<std::pair<TempElementType, size_t>>> reg_reps(
         257, std::vector<std::pair<TempElementType, size_t>>());
     std::vector<std::vector<std::pair<TempElementType, size_t>>> non_reg_reps(
@@ -1079,6 +1105,8 @@ namespace libsemigroups {
     size_t           max_rank = 0;
     ranks.insert(0);
 
+
+    // TODO: genericise
     RegularDClass* top
         = new RegularDClass(this, bmat8_helpers::one<BMat8>(_dim));
     add_D_class(top);
