@@ -416,13 +416,6 @@ namespace libsemigroups {
       std::swap(this->_data, that._data);
     }
 
-    // #ifdef LIBSEMIGROUPS_DENSEHASHMAP
-    //     // TODO(later) do this another way
-    //     BMat8 empty_key() const {
-    //       return BMat8(0xFF7FBFDFEFF7FBFE);
-    //     }
-    // #endif
-
     //! Find a basis for the row space of \c this.
     //!
     //! This member function returns a BMat8 whose non-zero rows form a basis
@@ -732,8 +725,9 @@ namespace libsemigroups {
   struct ImageRightAction<BMat8, BMat8> {
     //! Changes \p res in place to hold the image of \p pt under the right
     //! action of \p x.
-    void operator()(BMat8& res, BMat8 const& pt, BMat8 const& x) const
-        noexcept {
+    void operator()(BMat8&       res,
+                    BMat8 const& pt,
+                    BMat8 const& x) const noexcept {
       res = (pt * x).row_space_basis();
     }
   };
@@ -746,7 +740,9 @@ namespace libsemigroups {
   struct ImageLeftAction<BMat8, BMat8> {
     //! Changes \p res in place to hold the image of \p pt under the left
     //! action of \p x.
-    void operator()(BMat8& res, BMat8 pt, BMat8 x) const noexcept {
+    void operator()(BMat8&       res,
+                    BMat8 const& pt,
+                    BMat8 const& x) const noexcept {
       res = (x * pt).col_space_basis();
     }
   };
@@ -761,6 +757,66 @@ namespace libsemigroups {
     inline BMat8 operator()(BMat8 const& x) const noexcept {
       LIBSEMIGROUPS_ASSERT(x * x.transpose() == x.one());
       return x.transpose();
+    }
+  };
+
+  //! Specialization of the adapter LambdaValue for instances of
+  //! BMat8.
+  //!
+  //! \sa LambdaValue
+  template <>
+  struct LambdaValue<BMat8> {
+    //! The type of Lambda values for BMat8 is also BMat8; this provides an
+    //! efficient representation of row space bases.
+    using type = BMat8;
+  };
+
+  //! Specialization of the adapter RhoValue for instances of
+  //! BMat8.
+  //!
+  //! \sa RhoValue
+  template <>
+  struct RhoValue<BMat8> {
+    //! The type of Rho values for BMat8 is also BMat8; this provides an
+    //! efficient representation of column space bases.
+    using type = BMat8;
+  };
+
+  //! Specialization of the adapter Lambda for instances of
+  //! BMat8.
+  //!
+  //! \sa Lambda.
+  template <>
+  struct Lambda<BMat8, BMat8> {
+    //! Returns the lambda value of \p x as used in the Konieczny algorithm; for
+    //! BMat8 this is the row space basis.
+    // noexcept because BMat8::row_space_basis is noexcept
+    inline void operator()(BMat8& res, BMat8 const& x) const noexcept {
+      res = x.row_space_basis();
+    }
+  };
+
+  //! Specialization of the adapter Rho for instances of
+  //! BMat8.
+  //!
+  //! \sa Rho.
+  template <>
+  struct Rho<BMat8, BMat8> {
+    inline void operator()(BMat8& res, BMat8 const& x) const noexcept {
+      res = x.col_space_basis();
+    }
+  };
+
+  //! Specialization of the adapter Rank for instances of
+  //! BMat8.
+  //!
+  //! \sa Rank.
+  template <>
+  struct Rank<BMat8> {
+    //! Returns the rank of \p x as used in the Konieczny algorithm; for BMat8
+    //! this is the size of the row space.
+    inline size_t operator()(BMat8 const& x) const noexcept {
+      return x.row_space_size();
     }
   };
 }  // namespace libsemigroups
