@@ -51,9 +51,11 @@ pkginclude_HEADERS += include/libsemigroups/cong.hpp
 pkginclude_HEADERS += include/libsemigroups/constants.hpp
 pkginclude_HEADERS += include/libsemigroups/containers.hpp
 pkginclude_HEADERS += include/libsemigroups/coset.hpp
+pkginclude_HEADERS += include/libsemigroups/cache.hpp
 pkginclude_HEADERS += include/libsemigroups/deprecated.hpp
 pkginclude_HEADERS += include/libsemigroups/digraph-helper.hpp
 pkginclude_HEADERS += include/libsemigroups/digraph.hpp
+pkginclude_HEADERS += include/libsemigroups/element-adapters.hpp
 pkginclude_HEADERS += include/libsemigroups/element-helper.hpp
 pkginclude_HEADERS += include/libsemigroups/element.hpp
 pkginclude_HEADERS += include/libsemigroups/forest.hpp
@@ -68,6 +70,7 @@ pkginclude_HEADERS += include/libsemigroups/int-range.hpp
 pkginclude_HEADERS += include/libsemigroups/iterator.hpp
 pkginclude_HEADERS += include/libsemigroups/kbe.hpp
 pkginclude_HEADERS += include/libsemigroups/knuth-bendix.hpp
+pkginclude_HEADERS += include/libsemigroups/konieczny.hpp
 pkginclude_HEADERS += include/libsemigroups/libsemigroups-config.hpp
 pkginclude_HEADERS += include/libsemigroups/libsemigroups-debug.hpp
 pkginclude_HEADERS += include/libsemigroups/libsemigroups-exception.hpp
@@ -91,6 +94,7 @@ pkginclude_HEADERS += include/libsemigroups/uf.hpp
 pkginclude_HEADERS += include/libsemigroups/wilo.hpp
 pkginclude_HEADERS += include/libsemigroups/wislo.hpp
 pkginclude_HEADERS += include/libsemigroups/word.hpp
+pkginclude_HEADERS += tests/test-konieczny-booleanmat-data.hpp
 
 if LIBSEMIGROUPS_HPCOMBI
 hpcombiincludedir = $(includedir)/libsemigroups/HPCombi/include
@@ -198,6 +202,7 @@ check_PROGRAMS += test_cong
 check_PROGRAMS += test_cong_intf
 check_PROGRAMS += test_constants
 check_PROGRAMS += test_containers
+check_PROGRAMS += test_cache
 check_PROGRAMS += test_digraph_helper
 check_PROGRAMS += test_digraph
 check_PROGRAMS += test_element
@@ -220,6 +225,7 @@ check_PROGRAMS += test_hpcombi
 check_PROGRAMS += test_iterator
 check_PROGRAMS += test_kbe
 check_PROGRAMS += test_knuth_bendix
+check_PROGRAMS += test_konieczny
 check_PROGRAMS += test_order
 check_PROGRAMS += test_race
 check_PROGRAMS += test_runner
@@ -234,9 +240,11 @@ check_PROGRAMS += test_wislo
 check_PROGRAMS += test_word
 
 EXTRA_PROGRAMS =  bench_all
+EXTRA_PROGRAMS += bench_action
 EXTRA_PROGRAMS += bench_digraph
 EXTRA_PROGRAMS += bench_froidure_pin
 EXTRA_PROGRAMS += bench_knuth_bendix
+EXTRA_PROGRAMS += bench_konieczny
 EXTRA_PROGRAMS += bench_siso
 EXTRA_PROGRAMS += bench_todd_coxeter
 EXTRA_PROGRAMS += bench_wilo
@@ -285,6 +293,12 @@ test_all_SOURCES += tests/test-knuth-bendix-3.cpp
 test_all_SOURCES += tests/test-knuth-bendix-4.cpp
 test_all_SOURCES += tests/test-knuth-bendix-5.cpp
 test_all_SOURCES += tests/test-knuth-bendix-6.cpp
+test_all_SOURCES += tests/test-konieczny-bmat8-1.cpp
+test_all_SOURCES += tests/test-konieczny-bmat8-2.cpp
+test_all_SOURCES += tests/test-konieczny-bmat8-3.cpp
+test_all_SOURCES += tests/test-konieczny-transf.cpp
+test_all_SOURCES += tests/test-konieczny-booleanmat.cpp
+test_all_SOURCES += tests/test-konieczny-pperm.cpp
 test_all_SOURCES += tests/test-main.cpp
 test_all_SOURCES += tests/test-order.cpp
 test_all_SOURCES += tests/test-race.cpp
@@ -326,6 +340,9 @@ test_constants_SOURCES += tests/test-main.cpp
 
 test_containers_SOURCES =  tests/test-containers.cpp
 test_containers_SOURCES += tests/test-main.cpp
+
+test_cache_SOURCES =  tests/test-cache.cpp
+test_cache_SOURCES += tests/test-main.cpp
 
 test_digraph_helper_SOURCES  = tests/test-digraph-helper.cpp
 test_digraph_helper_SOURCES += tests/test-main.cpp
@@ -399,6 +416,14 @@ test_knuth_bendix_SOURCES += tests/test-knuth-bendix-5.cpp
 test_knuth_bendix_SOURCES += tests/test-knuth-bendix-6.cpp
 test_knuth_bendix_SOURCES += tests/test-main.cpp
 
+test_konieczny_SOURCES =  tests/test-konieczny-bmat8-1.cpp
+test_konieczny_SOURCES += tests/test-konieczny-bmat8-2.cpp
+test_konieczny_SOURCES += tests/test-konieczny-bmat8-3.cpp
+test_konieczny_SOURCES += tests/test-konieczny-transf.cpp
+test_konieczny_SOURCES += tests/test-konieczny-booleanmat.cpp
+test_konieczny_SOURCES += tests/test-konieczny-pperm.cpp
+test_konieczny_SOURCES += tests/test-main.cpp
+
 test_order_SOURCES =  tests/test-order.cpp
 test_order_SOURCES += tests/test-main.cpp
 
@@ -439,14 +464,19 @@ test_word_SOURCES += tests/test-main.cpp
 bench_all_SOURCES =  benchmarks/examples/cong-intf.cpp
 bench_all_SOURCES += benchmarks/examples/fpsemi-intf.cpp
 bench_all_SOURCES += benchmarks/examples/generators.cpp
+bench_all_SOURCES += benchmarks/bench-action.cpp
 bench_all_SOURCES += benchmarks/bench-digraph.cpp
 bench_all_SOURCES += benchmarks/bench-froidure-pin.cpp
 bench_all_SOURCES += benchmarks/bench-knuth-bendix.cpp
+bench_all_SOURCES += benchmarks/bench-konieczny.cpp
 bench_all_SOURCES += benchmarks/bench-main.cpp
 bench_all_SOURCES += benchmarks/bench-siso.cpp
 bench_all_SOURCES += benchmarks/bench-todd-coxeter.cpp
 bench_all_SOURCES += benchmarks/bench-wilo.cpp
 bench_all_SOURCES += benchmarks/bench-wislo.cpp
+
+bench_action_SOURCES =  benchmarks/bench-action.cpp
+bench_action_SOURCES += benchmarks/bench-main.cpp
 
 bench_digraph_SOURCES =  benchmarks/bench-digraph.cpp
 bench_digraph_SOURCES += benchmarks/bench-main.cpp
@@ -458,6 +488,9 @@ bench_froidure_pin_SOURCES += benchmarks/bench-main.cpp
 bench_knuth_bendix_SOURCES =  benchmarks/bench-knuth-bendix.cpp
 bench_knuth_bendix_SOURCES += benchmarks/examples/fpsemi-intf.cpp
 bench_knuth_bendix_SOURCES += benchmarks/bench-main.cpp
+
+bench_konieczny_SOURCES =  benchmarks/bench-konieczny.cpp
+bench_konieczny_SOURCES += benchmarks/bench-main.cpp
 
 bench_siso_SOURCES =  benchmarks/bench-siso.cpp
 bench_siso_SOURCES += benchmarks/bench-main.cpp
