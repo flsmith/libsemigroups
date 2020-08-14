@@ -1557,16 +1557,16 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_reference
+        operator()(internal_iterator_type const& it) const noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_pointer
+        operator()(internal_iterator_type const& it) const noexcept {
           return &it->first;
         }
       };
@@ -2006,18 +2006,17 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference operator()(state_type&,
-                                   internal_iterator_type const& it) const
-            noexcept {
+        const_reference
+        operator()(state_type&,
+                   internal_iterator_type const& it) const noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer operator()(state_type&,
-                                 internal_iterator_type const& it) const
-            noexcept {
+        const_pointer operator()(state_type&, internal_iterator_type const& it)
+            const noexcept {
           return &it->first;
         }
       };
