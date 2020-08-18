@@ -24,7 +24,7 @@
 
 #include <list>           // for list
 #include <stack>          // for stack
-#include <type_traits>    // for is_pointer_t
+#include <type_traits>    // for is_pointer
 #include <unordered_map>  // for unordered_map
 
 #include "libsemigroups/libsemigroups-exception.hpp"  // for LIBSEMIGROUPS_EXCEPTION
@@ -88,6 +88,10 @@ namespace libsemigroups {
           delete _acquirable.top();
           _acquirable.pop();
         }
+        while (!_acquired.empty()) {
+          delete _acquired.back();
+          _acquired.pop_back();
+        }
       }
 
       // Deleted other constructors to avoid unintentional copying
@@ -119,16 +123,6 @@ namespace libsemigroups {
         _acquired.erase(it->second);
         _map.erase(it);
         _acquirable.push(ptr);
-      }
-
-      // noexcept because std::list<T>::size is noexcept.
-      size_t acquired() const noexcept {
-        return _acquired.size();
-      }
-
-      // Not noexcept because std::stack<T>::size is not.
-      size_t acquirable() const {
-        return _acquirable.size();
       }
 
       // Not noexcept

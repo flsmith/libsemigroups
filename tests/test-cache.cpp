@@ -29,20 +29,15 @@ namespace libsemigroups {
                             "initial",
                             "[quick][transformation]") {
       Cache<Transformation<size_t>*> cache;
-      REQUIRE(cache.acquirable() == 0);
-      REQUIRE(cache.acquired() == 0);
       REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
       Transformation<size_t> t({0, 1, 3, 2});
-      cache.push(&t, 5);
-      REQUIRE(cache.acquirable() == 5);
-      REQUIRE(cache.acquired() == 0);
+      cache.push(&t, 1);
       Transformation<size_t>& x = *cache.acquire();
-      REQUIRE(cache.acquirable() == 4);
-      REQUIRE(cache.acquired() == 1);
+      REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
+      cache.push(&t, 1);
+      REQUIRE_NOTHROW(cache.acquire());
       x.increase_degree_by(10);
       cache.release(&x);
-      REQUIRE(cache.acquired() == 0);
-      REQUIRE(cache.acquirable() == 5);
     }
 
     LIBSEMIGROUPS_TEST_CASE("Cache",
@@ -50,56 +45,37 @@ namespace libsemigroups {
                             "boolean matrices",
                             "[quick][boolmat]") {
       Cache<BooleanMat*> cache;
-      REQUIRE(cache.acquirable() == 0);
-      REQUIRE(cache.acquired() == 0);
       REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
       BooleanMat* b = new BooleanMat({{0, 1, 0}, {1, 1, 1}, {0, 0, 1}});
       cache.push(b, 1);
-      REQUIRE(cache.acquirable() == 1);
-      REQUIRE(cache.acquired() == 0);
       BooleanMat* tmp = cache.acquire();
-      REQUIRE(cache.acquirable() == 0);
-      REQUIRE(cache.acquired() == 1);
       REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
       cache.release(tmp);
-      REQUIRE(cache.acquirable() == 1);
-      REQUIRE(cache.acquired() == 0);
+      tmp = cache.acquire();
+      REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
+      cache.release(tmp);
       delete b;
     }
 
     LIBSEMIGROUPS_TEST_CASE("Cache", "002", "CacheGuard", "[quick][boolmat]") {
       Cache<BooleanMat*> cache;
-      REQUIRE(cache.acquirable() == 0);
-      REQUIRE(cache.acquired() == 0);
       REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
       BooleanMat* b = new BooleanMat({{0, 1, 0}, {1, 1, 1}, {0, 0, 1}});
       cache.push(b, 2);
-      REQUIRE(cache.acquirable() == 2);
-      REQUIRE(cache.acquired() == 0);
       {
         CacheGuard<BooleanMat*> cg1(cache);
-        REQUIRE(cache.acquirable() == 1);
-        REQUIRE(cache.acquired() == 1);
-        BooleanMat* tmp1 = cg1.get();
+        BooleanMat*             tmp1 = cg1.get();
         REQUIRE(b != tmp1);
         {
           CacheGuard<BooleanMat*> cg2(cache);
           BooleanMat*             tmp2 = cg2.get();
-          REQUIRE(cache.acquirable() == 0);
-          REQUIRE(cache.acquired() == 2);
           REQUIRE_THROWS_AS(cache.acquire(), LibsemigroupsException);
           REQUIRE_THROWS_AS(CacheGuard<BooleanMat*>(cache),
                             LibsemigroupsException);
           REQUIRE(tmp1 != tmp2);
           REQUIRE(b != tmp2);
         }
-        REQUIRE(cache.acquirable() == 1);
-        REQUIRE(cache.acquired() == 1);
       }
-      REQUIRE(cache.acquirable() == 2);
-      REQUIRE(cache.acquired() == 0);
-      REQUIRE(cache.acquired() == 0);
-      REQUIRE(cache.acquirable() == 2);
       delete b;
     }
 
