@@ -621,9 +621,14 @@ namespace libsemigroups {
       }
     };
 
-    // Currently only supports N x N 2-dimensional static vectors
+    // StaticVector1 wraps an array, providing it with some of the syntax of
+    // std::vector.
+    // TODO(later) add tests specifically targeting this class
     template <typename T, size_t N>
     class StaticVector1 final {
+      static_assert(std::is_default_constructible<T>::value,
+                    "StaticVector1<T> requires T to be default-constructible");
+
      public:
       using value_type      = typename std::array<T, N>::value_type;
       using reference       = typename std::array<T, N>::reference;
