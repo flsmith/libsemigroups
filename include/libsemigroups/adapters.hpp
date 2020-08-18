@@ -430,6 +430,8 @@ namespace libsemigroups {
     //!
     //! \returns A hash value for \p x, a value of type `size_t`.
     size_t operator()(std::pair<size_t, size_t> const& x) const noexcept {
+    // TODO(later) this is a very bad hash when the values are larger than the
+    // shift width
 #if LIBSEMIGROUPS_SIZEOF_VOID_P == 8
       return (x.first << 32) + x.second;
 #else
@@ -607,19 +609,15 @@ namespace libsemigroups {
   //!
   //! This type should be a stateless trivially default constructible
   //! with an operator of signature `void
-  //! operator()(TPointType&, TElementType const&)`, and an operator of
-  //! signature `TPointType operator()(TElementType const&)`.
+  //! operator()(TPointType&, TElementType const&)`.
   //!
   //! The first call operator should modify the first argument in-place to
-  //! contain the lambda value of the second argument. The second call operator
-  //! should return the lambda value of the argument. The lambda values should
-  //! be a constant function on any given \f$\mathscr{L}\f$-class of the
-  //! semigroup in question.
+  //! contain the lambda value of the second argument. The kernel of the lambda
+  //! function should be Green's \f$\mathscr{L}\f$-relation on the semigroup in
+  //! question.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //! \tparam TPointType the type of the lambda points.
-  //!
-  //! The second template parameter exists for SFINAE in overload resolution.
   //!
   //! \par Used by KoniecznyTraits.
   template <typename TElementType, typename TPointType>
@@ -629,19 +627,15 @@ namespace libsemigroups {
   //!
   //! This type should be a stateless trivially default constructible
   //! with an operator of signature `void
-  //! operator()(TPointType&, TElementType const&)`, and an operator of
-  //! signature `TPointType operator()(TElementType const&)`.
+  //! operator()(TPointType&, TElementType const&)`.
   //!
   //! The first call operator should modify the first argument in-place to
-  //! contain the rho value of the second argument. The second call operator
-  //! should return the rho value of the argument. The rho values should
-  //! be a constant function on any given \f$\mathscr{R}\f$-class of the
-  //! semigroup in question.
+  //! contain the rho value of the second argument. The kernel of the rho
+  //! function should be Green's \f$\mathscr{R}\f$-relation on the semigroup in
+  //! question.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //! \tparam TPointType the type of the rho points.
-  //!
-  //! The second template parameter exists for SFINAE in overload resolution.
   //!
   //! \par Used by KoniecznyTraits.
   template <typename TElementType, typename TPointType>
@@ -649,10 +643,13 @@ namespace libsemigroups {
 
   //! Defined in ``adapters.hpp``.
   //!
-  //! Derived classes of this should have a typedef \c type representing the
-  //! type of data stored in the class, a 0-parameter constructor, and a
+  //! Specialisations of this class should have a typedef \c type representing
+  //! the type of data stored in the class, a 0-parameter constructor, and a
   //! constructor of signature `template<typename T> RankState(T, T)` where \c T
   //! is the type of a const iterator to a container of \c TElementTypes.
+  //!
+  //! The default declaration provided here has `type = void` and indicates
+  //! that no RankState object is required by Rank<TElementType>.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //!
@@ -660,9 +657,21 @@ namespace libsemigroups {
   template <typename TElementType>
   class RankState {
    public:
+    //! By default no additional state is required to calculate
+    //! Rank<TElementType>; this is represented by \c type being \c void.
     using type = void;
+
+    //! Default constructor; does nothing.
+    RankState() {}
+    //! Iterator constructor; does nothing.
     template <typename T>
     RankState(T, T) {}
+
+    // Other constructors are deleted.
+    RankState(RankState const&) = delete;
+    RankState(RankState&&) = delete;
+    RankState& operator=(RankState const&) = delete;
+    RankState& operator=(RankState&&) = delete;
   };
 
   //! Defined in ``adapters.hpp``.
@@ -676,14 +685,14 @@ namespace libsemigroups {
   //! The call operator should return the rank of the semigroup element given as
   //! argument. This must satisfy the following properties:
   //! * \f$\operatorname{rank}\f$ should agree with the \f$D\f$-order on the
-  //!   semigroup; that is, if \f$D_x \leq D_y\f$ then \f$\operatorname{rank}(x)
-  //!   \leq \operatorname{rank}(y)\f$,
+  //!   semigroup; that is, if \f$D_x \leq D_y\f$, then
+  //!   \f$\operatorname{rank}(x) \leq \operatorname{rank}(y)\f$,
   //! * if \f$D_x \leq D_y\f$ and \f$\operatorname{rank}(x) =
-  //!   \operatorname{rank}(y)\f$ then \f$D_x = D_y\f$.
+  //!   \operatorname{rank}(y)\f$, then \f$D_x = D_y\f$.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //! \tparam TStateType the type of the data required to compute ranks of
-  //!         TElementTypes; defaults to \c void.
+  //!         TElementTypes; defaults to \c RankState<TElementType>.
   //!
   //! \par Used by KoniecznyTraits.
   template <typename TElementType,

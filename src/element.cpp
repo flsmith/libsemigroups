@@ -30,7 +30,7 @@
 #include <iostream>  // for operator<<, basic_ostream, ostringstream
 
 #include "libsemigroups/blocks.hpp"            // for Blocks
-#include "libsemigroups/element-adapters.hpp"  // for VecHash
+#include "libsemigroups/element-adapters.hpp"  // for Hash<std::vector>
 #include "libsemigroups/report.hpp"            // for THREAD_ID_MANAGER
 #include "libsemigroups/semiring.hpp"  // for BooleanSemiring, Semiring (ptr only)
 

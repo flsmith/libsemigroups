@@ -489,7 +489,8 @@ namespace libsemigroups {
   //! \sa ImageLeftAction.
   template <>
   struct ImageLeftAction<HPCombi::Transf16, HPCombi::Vect16> {
-    // TODO(doc)
+    //! Changes \p res in place to hold the image of \p x under the left
+    //! action of \p y.
     void operator()(HPCombi::Vect16&         res,
                     HPCombi::Transf16 const& x,
                     HPCombi::Vect16 const&   y) const noexcept {

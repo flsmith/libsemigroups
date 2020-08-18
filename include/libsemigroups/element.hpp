@@ -1027,6 +1027,11 @@ namespace libsemigroups {
       return PartialPerm<T>(dom);
     }
 
+    //! Returns the group inverse of \c this.
+    //!
+    //! The group inverse of \c this is the partial permutation which is the
+    //! permutation inverse of \c this where \c this is defined, and is
+    //! undefined otherwise.
     PartialPerm<T> inverse() const {
       std::vector<T> dom(this->degree(), static_cast<T>(UNDEFINED));
       size_t const   size = this->_vector.size();
@@ -1038,6 +1043,11 @@ namespace libsemigroups {
       return PartialPerm<T>(dom);
     }
 
+    //! Modifies \p x to be the group inverse of \c this.
+    //!
+    //! The group inverse of \c this is the partial permutation which is the
+    //! permutation inverse of \c this where \c this is defined, and is
+    //! undefined otherwise.
     void inverse(PartialPerm<T>& x) const {
       x._vector.clear();
       x._vector.resize(this->degree(), static_cast<T>(UNDEFINED));
@@ -1689,11 +1699,6 @@ namespace libsemigroups {
     //!
     //! Constructs a boolean matrix of the specified degree
     explicit BooleanMat(size_t);
-
-    //! A debug constructor.
-    //!
-    //! Constructs a boolean matrix of degree 4
-    // BooleanMat();
 
     //! A copy constructor.
     BooleanMat(BooleanMat const&);
