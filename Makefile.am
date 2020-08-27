@@ -97,7 +97,6 @@ pkginclude_HEADERS += include/libsemigroups/uf.hpp
 pkginclude_HEADERS += include/libsemigroups/wilo.hpp
 pkginclude_HEADERS += include/libsemigroups/wislo.hpp
 pkginclude_HEADERS += include/libsemigroups/word.hpp
-pkginclude_HEADERS += tests/test-konieczny-booleanmat-data.hpp
 
 if LIBSEMIGROUPS_HPCOMBI_ENABLED
 hpcombiincludedir = $(includedir)/libsemigroups/HPCombi/include
@@ -575,6 +574,7 @@ EXTRA_DIST += src/kbe-impl.hpp
 EXTRA_DIST += src/knuth-bendix-impl.hpp 
 EXTRA_DIST += tests/catch.hpp
 EXTRA_DIST += tests/fpsemi-examples.hpp
+EXTRA_DIST += tests/test-konieczny-booleanmat-data.hpp
 EXTRA_DIST += tests/test-main.hpp
 
 ## For testing . . .
