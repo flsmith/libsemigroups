@@ -785,8 +785,8 @@ namespace libsemigroups {
       //! No doc
       struct Deref {
         //! No doc
-        const_reference operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_reference
+        operator()(internal_iterator_type const& it) const noexcept {
           return **it;
         }
       };
@@ -794,8 +794,8 @@ namespace libsemigroups {
       //! No doc
       struct AddressOf {
         //! No doc
-        const_pointer operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_pointer
+        operator()(internal_iterator_type const& it) const noexcept {
           return &(**it);
         }
       };
@@ -1694,7 +1694,7 @@ namespace libsemigroups {
                   this->to_external_const(x));
         LIBSEMIGROUPS_ASSERT(OneParamLambda()(this->to_external(tmp1))
                              == OneParamLambda()(this->to_external_const(
-                                    _left_reps[_left_mults.size() - 1])));
+                                 _left_reps[_left_mults.size() - 1])));
       }
       if (_left_mults_inv.size() >= _left_mults.size()) {
         Product()(this->to_external(tmp1),
@@ -1749,7 +1749,7 @@ namespace libsemigroups {
                   this->to_external_const(_rep));
         LIBSEMIGROUPS_ASSERT(OneParamRho()(this->to_external(tmp1))
                              == OneParamRho()(this->to_external_const(
-                                    _right_reps[_right_mults.size() - 1])));
+                                 _right_reps[_right_mults.size() - 1])));
       }
       if (_right_mults_inv.size() >= _right_mults.size()) {
         Product()(this->to_external(tmp1),
@@ -3432,32 +3432,24 @@ namespace libsemigroups {
                   });
     // TODO(later) add layers to report
     REPORT_DEFAULT(
-        "processed %d representatives to obtain %d D-classes (%d "
-        "regular and %d non-regular) consisting of: %d L-classes (%d "
-        "regular, %d non-regular); "
-        "%d R-classes (%d regular, %d non-regular); "
-        "and containing %d elements (%d regular, %d non-regular), "
-        "with %d unprocessed reps left and maximum rank of unprocessed "
-        "representatives %d\n",
-        _reps_processed,
+        "found %d elements in %d D-classes (%d regular), %d R-classes (%d "
+        "regular), %d L-classes (%d regular)\n",
+        current_size(),
         current_number_of_D_classes(),
         current_number_of_regular_D_classes(),
-        current_number_of_D_classes() - current_number_of_regular_D_classes(),
-        current_number_of_L_classes(),
-        current_number_of_regular_L_classes(),
-        current_number_of_L_classes() - current_number_of_regular_L_classes(),
         current_number_of_R_classes(),
         current_number_of_regular_R_classes(),
-        current_number_of_R_classes() - current_number_of_regular_R_classes(),
-        current_size(),
-        current_number_of_regular_elements(),
-        current_size() - current_number_of_regular_elements(),
-        number_of_reps_remaining,
-        max_rank());
+        current_number_of_L_classes(),
+        current_number_of_regular_L_classes());
+    REPORT_DEFAULT("there are %d unprocessed reps with ranks in [%d, %d]\n",
+                   number_of_reps_remaining,
+                   *_ranks.cbegin(),
+                   max_rank());
   }
 
   template <typename TElementType, typename TTraits>
   void Konieczny<TElementType, TTraits>::run_impl() {
+    detail::Timer t;
     // initialise the required data
     init_run();
     // if we haven't initialised, it should be because we stopped() during
@@ -3534,6 +3526,8 @@ namespace libsemigroups {
         _ranks.erase(mx_rank);
       }
     }
+
+    REPORT_TIME(t);
     report_why_we_stopped();
   }
 }  // namespace libsemigroups
