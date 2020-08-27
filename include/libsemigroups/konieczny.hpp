@@ -1225,7 +1225,7 @@ namespace libsemigroups {
       REPORT_DEFAULT("found %llu lambda-values and %llu rho-values in %s\n",
                      _lambda_orb.current_size(),
                      _rho_orb.current_size(),
-                     t.string());
+                     t.string().c_str());
     }
 
     ////////////////////////////////////////////////////////////////////////
