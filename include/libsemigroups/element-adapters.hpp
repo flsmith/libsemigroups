@@ -594,8 +594,8 @@ namespace libsemigroups {
   //! \sa LambdaValue.
   template <typename T>
   struct LambdaValue<Transformation<T>> {
-    //! For Transformations, \c type is the largest BitSet available, representing
-    //! the image set of the Transformations.
+    //! For Transformations, \c type is the largest BitSet available,
+    //! representing the image set of the Transformations.
     static constexpr size_t N = BitSet<1>::max_size();
     using type                = BitSet<N>;
   };
@@ -607,8 +607,8 @@ namespace libsemigroups {
   //! \sa RhoValue.
   template <typename T>
   struct RhoValue<Transformation<T>> {
-    //! For Transformation<T>s, \c type is std::vector<T>, representing the kernel
-    //! of the Transformations.
+    //! For Transformation<T>s, \c type is std::vector<T>, representing the
+    //! kernel of the Transformations.
     using type = std::vector<T>;
   };
 
