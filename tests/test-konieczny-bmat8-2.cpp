@@ -32,6 +32,11 @@ namespace libsemigroups {
                           "007",
                           "full bmat monoid 5",
                           "[extreme][bmat8]") {
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
+#endif
     using BMat                         = typename BMatHelper<5>::type;
     auto                    rg         = ReportGuard(true);
     const std::vector<BMat> bmat5_gens = {BMat({{1, 0, 0, 0, 0},
@@ -107,6 +112,10 @@ namespace libsemigroups {
 
     Konieczny<BMat> T(bmat5_gens);
     REQUIRE(T.size() == 33554432);
+
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic pop
+#endif
   }
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
@@ -160,6 +169,11 @@ namespace libsemigroups {
                           "009",
                           "regular generated bmat monoid 5",
                           "[extreme][bmat8]") {
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
+#endif
     using BMat                             = typename BMatHelper<5>::type;
     auto                    rg             = ReportGuard(true);
     const std::vector<BMat> reg_bmat5_gens = {BMat({{0, 1, 0, 0, 0},
@@ -206,6 +220,9 @@ namespace libsemigroups {
     });
     REQUIRE(sum == 73023);
     REQUIRE(T.number_of_idempotents() == 73023);
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic pop
+#endif
   }
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
@@ -286,6 +303,11 @@ namespace libsemigroups {
                           "011",
                           "another large example",
                           "[quick][no-valgrind][bmat8]") {
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
+#endif
     using BMat                   = typename BMatHelper<8>::type;
     auto                    rg   = ReportGuard(REPORT);
     const std::vector<BMat> gens = {BMat({{0, 1, 0, 0, 0, 0, 0, 0},
@@ -355,6 +377,9 @@ namespace libsemigroups {
 
     Konieczny<BMat> S(gens);
     REQUIRE(S.size() == 201750);
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic pop
+#endif
   }
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
@@ -435,6 +460,11 @@ namespace libsemigroups {
                           "013",
                           "full bmat monoid 5 with stop in Action",
                           "[extreme][bmat8]") {
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
+#endif
     using BMat                         = typename BMatHelper<5>::type;
     auto                    rg         = ReportGuard(true);
     const std::vector<BMat> bmat5_gens = {BMat({{1, 0, 0, 0, 0},
@@ -518,6 +548,9 @@ namespace libsemigroups {
     T.run_for(std::chrono::milliseconds(100));
     T.run_for(std::chrono::milliseconds(100));
     REQUIRE(T.size() == 33554432);
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic pop
+#endif
   }
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",

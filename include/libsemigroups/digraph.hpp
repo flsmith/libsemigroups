@@ -2810,8 +2810,8 @@ namespace libsemigroups {
 
   template <typename T>
   typename ActionDigraph<T>::const_panilo_iterator&
-  ActionDigraph<T>::const_panilo_iterator::
-  operator=(const_panilo_iterator const&)
+  ActionDigraph<T>::const_panilo_iterator::operator=(
+      const_panilo_iterator const&)
       = default;
 
   template <typename T>
@@ -2841,8 +2841,8 @@ namespace libsemigroups {
 
   template <typename T>
   typename ActionDigraph<T>::const_pstilo_iterator&
-  ActionDigraph<T>::const_pstilo_iterator::
-  operator=(const_pstilo_iterator const&)
+  ActionDigraph<T>::const_pstilo_iterator::operator=(
+      const_pstilo_iterator const&)
       = default;
 
   template <typename T>

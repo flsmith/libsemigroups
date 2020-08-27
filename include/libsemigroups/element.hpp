@@ -792,6 +792,9 @@ namespace libsemigroups {
     Transformation(Transformation<TValueType> const& copy)
         : detail::TransfBase<TValueType, Transformation<TValueType>>(copy) {}
 
+    Transformation& operator=(Transformation<TValueType> const&) = default;
+    Transformation& operator=(Transformation<TValueType>&&) = default;
+
     //! Validates the data defining \c this.
     //!
     //! This member function throws a libsemigroups::LibsemigroupsException if
@@ -959,8 +962,12 @@ namespace libsemigroups {
     }
 
     //! A copy constructor.
-    PartialPerm<T>(PartialPerm const& copy)
+    PartialPerm(PartialPerm const& copy)
         : PartialTransformation<T, PartialPerm<T>>(copy) {}
+
+    PartialPerm(PartialPerm&&) = default;
+    PartialPerm& operator=(PartialPerm&&) = default;
+    PartialPerm& operator=(PartialPerm const&) = default;
 
     void increase_degree_by(size_t m) override {
       this->_vector.insert(this->_vector.end(), m, UNDEFINED);
@@ -1159,6 +1166,9 @@ namespace libsemigroups {
     //!
     //! Constructs a Bipartition that is mathematically equal to \p copy.
     Bipartition(Bipartition const&);
+    Bipartition(Bipartition&&);
+    Bipartition& operator=(Bipartition const&);
+    Bipartition& operator=(Bipartition&&);
 
     //! A constructor.
     //!
@@ -1433,6 +1443,11 @@ namespace libsemigroups {
             _degree(copy._degree),
             _semiring(copy._semiring) {}
 
+      MatrixOverSemiringBase(MatrixOverSemiringBase&&) = default;
+      MatrixOverSemiringBase& operator=(MatrixOverSemiringBase const&)
+          = default;
+      MatrixOverSemiringBase& operator=(MatrixOverSemiringBase&&) = default;
+
       //! Validates the data defining \c this.
       //!
       //! This member function throws a libsemigroups::LibsemigroupsException if
@@ -1622,8 +1637,6 @@ namespace libsemigroups {
     //! converted into its normal form when the object is constructed.
     ProjectiveMaxPlusMatrix(std::vector<std::vector<int64_t>> const&,
                             Semiring<int64_t> const*);
-    //! A copy constructor.
-    ProjectiveMaxPlusMatrix(ProjectiveMaxPlusMatrix const&) = default;
 
     //! Returns the product of \c this and \p y
     //!
@@ -1749,6 +1762,10 @@ namespace libsemigroups {
 
     //! A copy constructor.
     BooleanMat(BooleanMat const&);
+    BooleanMat(BooleanMat&&);
+
+    BooleanMat& operator=(BooleanMat const&);
+    BooleanMat& operator=(BooleanMat&&);
 
     //! Multiplies \p x and \p y and stores the result in \c this.
     //!

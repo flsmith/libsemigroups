@@ -33,6 +33,11 @@ namespace libsemigroups {
                           "000",
                           "regular elements and idempotents",
                           "[quick][no-valgrind][bmat8]") {
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
+#endif
     using BMat = typename BMatHelper<4>::type;
     auto rg    = ReportGuard(REPORT);
 
@@ -67,6 +72,9 @@ namespace libsemigroups {
     }
     REQUIRE(count == 40408);
     REQUIRE(KS.number_of_regular_elements() == 40408);
+#ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
+#pragma GCC diagnostic pop
+#endif
   }
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",

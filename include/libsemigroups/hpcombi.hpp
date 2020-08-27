@@ -28,6 +28,9 @@
 
 #ifdef LIBSEMIGROUPS_HPCOMBI_ENABLED
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Winline"
 #include "HPCombi/include/hpcombi.hpp"  // for HPCombi::Perm16, ...
 
 #include "adapters.hpp"             // for Complexity, Degree, ...
@@ -618,5 +621,6 @@ namespace libsemigroups {
 
 }  // namespace libsemigroups
 
+#pragma GCC diagnostic pop
 #endif  // LIBSEMIGROUPS_HPCOMBI_ENABLED
 #endif  // LIBSEMIGROUPS_HPCOMBI_HPP_

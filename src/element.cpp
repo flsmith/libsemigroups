@@ -55,6 +55,10 @@ namespace libsemigroups {
       : MatrixOverSemiringBase<bool, BooleanMat>(copy._vector, copy._semiring) {
   }
 
+  BooleanMat::BooleanMat(BooleanMat&&) = default;
+  BooleanMat& BooleanMat::operator=(BooleanMat const&) = default;
+  BooleanMat& BooleanMat::operator=(BooleanMat&&) = default;
+
   void BooleanMat::redefine(Element const& x, Element const& y) {
     LIBSEMIGROUPS_ASSERT(x.degree() == y.degree());
     LIBSEMIGROUPS_ASSERT(x.degree() == this->degree());
@@ -196,6 +200,9 @@ namespace libsemigroups {
         _rank(UNDEFINED) {}
 
   Bipartition::Bipartition(Bipartition const&) = default;
+  Bipartition::Bipartition(Bipartition&&)      = default;
+  Bipartition& Bipartition::operator=(Bipartition const&) = default;
+  Bipartition& Bipartition::operator=(Bipartition&&) = default;
 
   Bipartition::Bipartition(size_t degree) : Bipartition() {
     this->_vector.resize(2 * degree);
