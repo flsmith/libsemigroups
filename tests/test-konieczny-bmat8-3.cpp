@@ -20,8 +20,9 @@
 #include "catch.hpp"      // for REQUIRE
 #include "test-main.hpp"  // FOR LIBSEMIGROUPS_TEST_CASE
 
-#include "libsemigroups/bmat8.hpp"      // for BMat8
-#include "libsemigroups/konieczny.hpp"  // for Konieczny
+#include "libsemigroups/bmat8.hpp"           // for BMat8
+#include "libsemigroups/element-helper.hpp"  // for BMatHelper
+#include "libsemigroups/konieczny.hpp"       // for Konieczny
 
 namespace libsemigroups {
 
@@ -155,5 +156,75 @@ namespace libsemigroups {
     for (size_t i = 0; i < non_reg_reps.size(); ++i) {
       test_it(KS, non_reg_reps, i, expected[i]);
     }
+  }
+
+  LIBSEMIGROUPS_TEST_CASE("Konieczny",
+                          "034",
+                          "Hall monoid 5",
+                          "[extreme][bmat8]") {
+    auto rg    = ReportGuard();
+    using BMat = typename BMatHelper<5>::type;
+    Konieczny<BMat> K;
+    K.add_generator(BMat({{0, 1, 0, 0, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 0, 0, 1},
+                          {1, 0, 0, 0, 0}}));
+    K.add_generator(BMat({{0, 1, 0, 0, 0},
+                          {1, 0, 0, 0, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 0, 0, 1}}));
+    K.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 1, 0, 0, 0},
+                          {1, 0, 0, 0, 1}}));
+    K.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 0, 1, 0},
+                          {0, 1, 1, 0, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+    K.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 1, 1, 0},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 0, 1, 0},
+                          {1, 1, 1, 0, 0}}));
+    K.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 1, 1, 0},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 0, 1},
+                          {1, 0, 0, 0, 1},
+                          {1, 1, 1, 1, 0}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 0, 1},
+                          {1, 0, 0, 1, 0},
+                          {1, 1, 1, 0, 0}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 1}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 1, 0},
+                          {1, 1, 0, 0, 1}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 1, 1, 0},
+                          {1, 0, 1, 1, 0},
+                          {1, 1, 0, 0, 1}}));
+    K.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+    REQUIRE(K.size() == 23191071);
   }
 }  // namespace libsemigroups
