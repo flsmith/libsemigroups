@@ -1189,7 +1189,9 @@ namespace libsemigroups {
       REQUIRE(tc.nr_classes() == 34);
       REQUIRE(tc.quotient_froidure_pin()->size() == 34);
       using detail::TCE;
-      auto& S = static_cast<FroidurePin<TCE>&>(*tc.quotient_froidure_pin());
+      auto& S
+          = static_cast<FroidurePin<TCE, FroidurePinTraits<TCE, TCE::Table>>&>(
+              *tc.quotient_froidure_pin());
       S.run();
       std::vector<TCE> v(S.cbegin(), S.cend());
       std::sort(v.begin(), v.end());
