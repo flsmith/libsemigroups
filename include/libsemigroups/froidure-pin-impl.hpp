@@ -836,7 +836,7 @@ namespace libsemigroups {
   ////////////////////////////////////////////////////////////////////////
 
   // Expand the data structures in the semigroup with space for nr elements
-  INLINE_VOID FROIDURE_PIN::expand(size_type nr) {
+  VOID FROIDURE_PIN::expand(size_type nr) {
     _left.add_rows(nr);
     _reduced.add_rows(nr);
     _right.add_rows(nr);

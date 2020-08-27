@@ -225,6 +225,8 @@ namespace libsemigroups {
       std::initializer_list<std::vector<int32_t>> const& blocks)
       : Bipartition(blocks_to_list(blocks)) {}
 
+  Bipartition::~Bipartition() = default;
+
   void Bipartition::set_nr_blocks(size_t nr_blocks) {
     LIBSEMIGROUPS_ASSERT(_nr_blocks == UNDEFINED || _nr_blocks == nr_blocks);
     _nr_blocks = nr_blocks;
@@ -775,10 +777,10 @@ namespace libsemigroups {
     this->reset_hash_value();
   }
 
-  inline void PBR::unite_rows(detail::DynamicArray2<bool>& out,
-                              detail::DynamicArray2<bool>& tmp,
-                              size_t const&                i,
-                              size_t const&                j) {
+  void PBR::unite_rows(detail::DynamicArray2<bool>& out,
+                       detail::DynamicArray2<bool>& tmp,
+                       size_t const&                i,
+                       size_t const&                j) {
     for (size_t k = 0; k < out.nr_cols(); k++) {
       out.set(i, k, (out.get(i, k) || tmp.get(j, k + 1)));
     }

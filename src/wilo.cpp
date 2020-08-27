@@ -30,6 +30,8 @@
 
 namespace libsemigroups {
 
+  const_wilo_iterator::~const_wilo_iterator() = default;
+
   const_wilo_iterator cbegin_wilo(size_t const n,
                                   size_t const upper_bound,
                                   word_type&&  first,

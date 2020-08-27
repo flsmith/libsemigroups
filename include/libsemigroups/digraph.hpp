@@ -214,7 +214,7 @@ namespace libsemigroups {
     //! Default move assignment constructor
     ActionDigraph& operator=(ActionDigraph&&) = default;
 
-    ~ActionDigraph() = default;
+    ~ActionDigraph();
 
     //! Constructs a random ActionDigraph from \p mt with the specified number
     //! of nodes and out-degree.
@@ -1148,15 +1148,15 @@ namespace libsemigroups {
       //! No doc
       const_panilo_iterator() = default;
       //! No doc
-      const_panilo_iterator(const_panilo_iterator const&) = default;
+      const_panilo_iterator(const_panilo_iterator const&);
       //! No doc
-      const_panilo_iterator(const_panilo_iterator&&) = default;
+      const_panilo_iterator(const_panilo_iterator&&);
       //! No doc
       const_panilo_iterator& operator=(const_panilo_iterator const&) = default;
       //! No doc
       const_panilo_iterator& operator=(const_panilo_iterator&&) = default;
       //! No doc
-      ~const_panilo_iterator() = default;
+      ~const_panilo_iterator();
 
       //! No doc
       const_panilo_iterator(ActionDigraph const* ptr,
@@ -2514,7 +2514,7 @@ namespace libsemigroups {
         if (add == 0
             && std::all_of(acc.cbegin() + source * N,
                            acc.cbegin() + source * N + N,
-                           [](uint64_t i) { return i == 0; })) {
+                           [](uint64_t j) { return j == 0; })) {
           break;
         }
         total += add;
@@ -2770,6 +2770,21 @@ namespace libsemigroups {
       std::vector<scc_index_type>         _id;
     } _scc;
   };
+
+  template <typename T>
+  ActionDigraph<T>::~ActionDigraph() = default;
+  template <typename T>
+  ActionDigraph<T>::const_panilo_iterator::~const_panilo_iterator() = default;
+
+  template <typename T>
+  ActionDigraph<T>::const_panilo_iterator::const_panilo_iterator(
+      const_panilo_iterator const&)
+      = default;
+
+  template <typename T>
+  ActionDigraph<T>::const_panilo_iterator::const_panilo_iterator(
+      const_panilo_iterator&&)
+      = default;
 
   ////////////////////////////////////////////////////////////////////////
   // ActionDigraph - number_of_paths_special - private

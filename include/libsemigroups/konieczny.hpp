@@ -2137,7 +2137,7 @@ namespace libsemigroups {
       }
       parent->make_idem(this->unsafe_rep());
       init();
-#if LIBSEMIGROUPS_DEBUG
+#ifdef LIBSEMIGROUPS_DEBUG
       PoolGuard cg(this->parent()->element_pool());
       auto      tmp = cg.get();
       Product()(this->to_external(tmp), this->rep(), this->rep());

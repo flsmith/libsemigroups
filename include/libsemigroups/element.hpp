@@ -1123,6 +1123,8 @@ namespace libsemigroups {
     //! classes given by the vectors in \p blocks.
     Bipartition(std::initializer_list<std::vector<int32_t>> const&);
 
+    ~Bipartition();
+
     //! Validates the data defining \c this.
     //!
     //! This member function throws a libsemigroups::LibsemigroupsException if

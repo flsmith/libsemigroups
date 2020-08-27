@@ -690,6 +690,8 @@ namespace libsemigroups {
           break;
         case order::none: {
         }
+        default: {
+        }
       }
       if (finished()) {
         _standardized = rdr;

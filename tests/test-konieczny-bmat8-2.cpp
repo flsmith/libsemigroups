@@ -183,7 +183,7 @@ namespace libsemigroups {
                                                     {0, 0, 0, 1, 0},
                                                     {0, 0, 0, 0, 1}})};
 
-    using DClass        = Konieczny<BMat>::DClass;
+    using DClass = Konieczny<BMat>::DClass;
 
     Konieczny<BMat> T(reg_bmat5_gens);
     REQUIRE(T.size() == 32311832);
@@ -201,10 +201,9 @@ namespace libsemigroups {
     REQUIRE(sum == 73023);
 
     sum = 0;
-    std::for_each(
-        T.cbegin_rdc(), T.cend_rdc(), [&sum, &T](DClass const& x) {
-          sum += T.D_class_of_element(x.rep()).number_of_idempotents();
-        });
+    std::for_each(T.cbegin_rdc(), T.cend_rdc(), [&sum, &T](DClass const& x) {
+      sum += T.D_class_of_element(x.rep()).number_of_idempotents();
+    });
     REQUIRE(sum == 73023);
     REQUIRE(T.number_of_idempotents() == 73023);
   }

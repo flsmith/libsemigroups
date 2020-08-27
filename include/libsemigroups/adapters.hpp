@@ -430,8 +430,8 @@ namespace libsemigroups {
     //!
     //! \returns A hash value for \p x, a value of type `size_t`.
     size_t operator()(std::pair<size_t, size_t> const& x) const noexcept {
-    // TODO(later) this is a very bad hash when the values are larger than the
-    // shift width
+      // TODO(later) this is a very bad hash when the values are larger than the
+      // shift width
 #if LIBSEMIGROUPS_SIZEOF_VOID_P == 8
       return (x.first << 32) + x.second;
 #else
@@ -669,7 +669,7 @@ namespace libsemigroups {
 
     // Other constructors are deleted.
     RankState(RankState const&) = delete;
-    RankState(RankState&&) = delete;
+    RankState(RankState&&)      = delete;
     RankState& operator=(RankState const&) = delete;
     RankState& operator=(RankState&&) = delete;
   };

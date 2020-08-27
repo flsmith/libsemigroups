@@ -440,7 +440,7 @@ namespace libsemigroups {
     static constexpr size_t N = BitSet<1>::max_size();
     //! For PartialPerms, \c type is BitSet<N>, representing the image of the
     //! PartialPerms.
-    using type                = BitSet<N>;
+    using type = BitSet<N>;
   };
 
   //! Specialization of the adapter RhoValue for instances of PartialPerm.
@@ -835,7 +835,7 @@ namespace libsemigroups {
     //! For BooleanMats, \c type is StaticVector1<BitSet<N>, N>, where \c N is
     //! the maximum width of BitSet on the system. This represents the row space
     //! basis of the BooleanMats.
-    using type                = detail::StaticVector1<BitSet<N>, N>;
+    using type = detail::StaticVector1<BitSet<N>, N>;
   };
 
   //! Specialization of the adapter RhoValue for instances of BooleanMat.
@@ -970,7 +970,7 @@ namespace libsemigroups {
 
     // Other constructors are deleted.
     RankState(RankState const&) = delete;
-    RankState(RankState&&) = delete;
+    RankState(RankState&&)      = delete;
     RankState& operator=(RankState const&) = delete;
     RankState& operator=(RankState&&) = delete;
 
@@ -997,10 +997,10 @@ namespace libsemigroups {
     //! orbit of the semigroup.
     size_t operator()(RankState<BooleanMat> const& state,
                       BooleanMat const&            x) const {
-      using bitset_type       = BitSet<BitSet<1>::max_size()>;
-      using orb_type = typename RankState<BooleanMat>::type;
-      static thread_local std::vector<bool> seen;
-      static thread_local std::vector<bitset_type>   x_rows;
+      using bitset_type = BitSet<BitSet<1>::max_size()>;
+      using orb_type    = typename RankState<BooleanMat>::type;
+      static thread_local std::vector<bool>        seen;
+      static thread_local std::vector<bitset_type> x_rows;
       seen.clear();
       x_rows.clear();
       orb_type const& orb = state.get();
@@ -1020,7 +1020,7 @@ namespace libsemigroups {
         bitset_type const& row = orb[i];
         bitset_type        cup;
         cup.reset();
-        row.apply([&cup](size_t i) { cup |= x_rows[i]; });
+        row.apply([&cup](size_t j) { cup |= x_rows[j]; });
         size_t pos = orb.position(cup);
         LIBSEMIGROUPS_ASSERT(pos != UNDEFINED);
         if (!seen[pos]) {
