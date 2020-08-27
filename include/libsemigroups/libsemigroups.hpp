@@ -58,6 +58,7 @@
 #include "libsemigroups.hpp"
 #include "obvinf.hpp"
 #include "order.hpp"
+#include "pool.hpp"
 #include "race.hpp"
 #include "report.hpp"
 #include "runner.hpp"
