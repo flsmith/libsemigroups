@@ -278,12 +278,12 @@ namespace libsemigroups {
       //! A constructor.
       //!
       //! Returns an object with an uninitialised vector.
-      ElementWithVectorData() : Element(), _vector() {}
+      ElementWithVectorData();
 
       //! A constructor.
       //!
       //! Returns an object with an uninitialised vector of length \p n.
-      explicit ElementWithVectorData(size_t n) : Element(), _vector(n) {}
+      explicit ElementWithVectorData(size_t);
 
       //! A constructor.
       //!
@@ -291,19 +291,17 @@ namespace libsemigroups {
       //! of the element.
       //!
       //! Returns an object whose defining data is a copy of \p vector.
-      explicit ElementWithVectorData(std::vector<TValueType> const& vector)
-          : Element(), _vector(vector) {}
+      explicit ElementWithVectorData(std::vector<TValueType> const&);
 
       //! A constructor.
       //!
-      //! The parameter \p vector should be a rvalue reference to defining data
+      //! The parameter \p vec should be a rvalue reference to defining data
       //! of the element.
       //!
       //! Returns an object whose defining data is \p vec.
       //! This constructor moves the data from \p vec, meaning that \p vec is
       //! changed by this constructor.
-      explicit ElementWithVectorData(std::vector<TValueType>&& vec)
-          : Element(), _vector(std::move(vec)) {}
+      explicit ElementWithVectorData(std::vector<TValueType>&&);
 
       //! A copy constructor.
       //!
@@ -312,9 +310,7 @@ namespace libsemigroups {
       //! then this member function must be overridden by any subclass of
       //! ElementWithVectorData since there is no way of knowing how a subclass
       //! is defined by the data in the vector.
-      ElementWithVectorData(ElementWithVectorData const& copy)
-          : Element(copy._hash_value),
-            _vector(copy._vector.cbegin(), copy._vector.cend()) {}
+      ElementWithVectorData(ElementWithVectorData const&);
 
       //! Returns the product of \c this and \p y
       //!
@@ -497,8 +493,7 @@ namespace libsemigroups {
         : public ElementWithVectorData<TValueType, TSubclass> {
      public:
       using ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData;
-      ElementWithVectorDataDefaultHash()
-          : ElementWithVectorData<TValueType, TSubclass>() {}
+      ElementWithVectorDataDefaultHash();
 
      protected:
       //! This member function implements the default hash function for an
@@ -559,17 +554,13 @@ namespace libsemigroups {
     //! contain in position *i* the image \f$(i)f\f$, or
     //! libsemigroups::UNDEFINED if *f* is not defined on *i*, for all
     //! \f$0 < i < n\f$.
-    explicit PartialTransformation(std::vector<T> const& vec)
-        : detail::ElementWithVectorDataDefaultHash<T, TSubclass>(vec) {
-      validate();
-    }
+    explicit PartialTransformation(std::vector<T> const&);
 
     //! A constructor.
     //!
     //! Constructs a vector from \p imgs and calls the corresponding
     //! constructor.
-    PartialTransformation(std::initializer_list<T> imgs)
-        : PartialTransformation<T, TSubclass>(std::vector<T>(imgs)) {}
+    PartialTransformation(std::initializer_list<T>);
 
     //! Validates the data defining \c this.
     //!
@@ -647,6 +638,19 @@ namespace libsemigroups {
     // Used for determining rank, TODO(later) make thread-safe
     static std::vector<bool> _lookup;
   };
+
+  template <typename TValueType, typename TSubclass>
+  PartialTransformation<TValueType, TSubclass>::PartialTransformation(
+      std::vector<TValueType> const& vec)
+      : detail::ElementWithVectorDataDefaultHash<TValueType, TSubclass>(vec) {
+    validate();
+  }
+
+  template <typename TValueType, typename TSubclass>
+  PartialTransformation<TValueType, TSubclass>::PartialTransformation(
+      std::initializer_list<TValueType> imgs)
+      : PartialTransformation<TValueType, TSubclass>(
+            std::vector<TValueType>(imgs)) {}
 
   template <typename TValueType, typename TSubclass>
   std::vector<bool> PartialTransformation<TValueType, TSubclass>::_lookup

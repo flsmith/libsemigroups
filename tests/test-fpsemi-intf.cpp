@@ -36,15 +36,6 @@
 #include "libsemigroups/wislo.hpp"         // for cbegin_wislo
 #include "libsemigroups/word.hpp"          // for number_of_words
 
-// The following is required to get catch to print rules
-namespace std {
-  using rule_type = libsemigroups::FpSemigroupInterface::rule_type;
-  std::ostream& operator<<(std::ostream& os, rule_type const& value) {
-    os << "{ " << value.first << ", " << value.second << " }";
-    return os;
-  }
-}  // namespace std
-
 namespace libsemigroups {
   struct LibsemigroupsException;  // Forward declaration
 

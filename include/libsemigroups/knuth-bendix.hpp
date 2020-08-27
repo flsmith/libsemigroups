@@ -769,6 +769,8 @@ namespace libsemigroups {
 
       //! Deleted.
       KnuthBendix& operator=(KnuthBendix&&) = delete;
+      
+      ~KnuthBendix();
 
       //! Returns the underlying fpsemigroup::KnuthBendix.
       //!

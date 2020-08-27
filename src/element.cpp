@@ -35,6 +35,43 @@
 #include "libsemigroups/semiring.hpp"  // for BooleanSemiring, Semiring (ptr only)
 
 namespace libsemigroups {
+  namespace detail {
+    ////////////////////////////////////////////////////////////////////////
+    // ElementWithVectorData
+    ////////////////////////////////////////////////////////////////////////
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData()
+        : Element(), _vector() {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        size_t n)
+        : Element(), _vector(n) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        std::vector<TValueType> const& vector)
+        : Element(), _vector(vector) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        std::vector<TValueType>&& vec)
+        : Element(), _vector(std::move(vec)) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        ElementWithVectorData const& copy)
+        : Element(copy._hash_value),
+          _vector(copy._vector.cbegin(), copy._vector.cend()) {}
+
+    ////////////////////////////////////////////////////////////////////////
+    // ElementWithVectorDataDefaultHash
+    ////////////////////////////////////////////////////////////////////////
+    template <typename TValueType, class TSubclass>
+    ElementWithVectorDataDefaultHash<TValueType, TSubclass>::
+        ElementWithVectorDataDefaultHash()
+        : ElementWithVectorData<TValueType, TSubclass>() {}
+  }  // namespace detail
 
   ////////////////////////////////////////////////////////////////////////
   // BooleanMat
