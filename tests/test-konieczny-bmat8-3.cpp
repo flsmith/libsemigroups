@@ -27,7 +27,7 @@
 namespace libsemigroups {
 
   constexpr bool REPORT = false;
-
+namespace {
   void test_it(Konieczny<BMat8>&           KS,
                std::vector<BMat8>&         non_reg_reps,
                size_t                      i,
@@ -38,6 +38,7 @@ namespace libsemigroups {
     REQUIRE(X.number_of_L_classes() == v[2]);
     REQUIRE(X.number_of_R_classes() == v[3]);
   }
+}
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "017",

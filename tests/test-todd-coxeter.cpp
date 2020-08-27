@@ -197,6 +197,7 @@ namespace libsemigroups {
   //
   // The next function implements this order, returning the words on an
   // n-letter alphabet of length up to M.
+  namespace {
   std::vector<word_type> recursive_path_words(size_t n, size_t M) {
     std::vector<word_type> out;
     size_t                 a = 0;
@@ -242,6 +243,7 @@ namespace libsemigroups {
       }
     }
     return out;
+  }
   }
 
   namespace congruence {
@@ -558,8 +560,8 @@ namespace libsemigroups {
       REQUIRE(std::all_of(
           tc.cbegin_normal_forms(),
           tc.cend_normal_forms(),
-          [&tc](word_type const& w) -> bool {
-            return tc.class_index_to_word(tc.word_to_class_index(w)) == w;
+          [&tc](word_type const& ww) -> bool {
+            return tc.class_index_to_word(tc.word_to_class_index(ww)) == ww;
           }));
     }
 

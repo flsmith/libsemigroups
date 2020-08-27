@@ -312,6 +312,10 @@ namespace libsemigroups {
       //! is defined by the data in the vector.
       ElementWithVectorData(ElementWithVectorData const&);
 
+      ElementWithVectorData(ElementWithVectorData&&)      = default;
+      ElementWithVectorData& operator=(ElementWithVectorData const&) = default;
+      ElementWithVectorData& operator=(ElementWithVectorData&&) = default;
+
       //! Returns the product of \c this and \p y
       //!
       //! This returns the product of \c this and \p y, as defined by
@@ -1117,7 +1121,7 @@ namespace libsemigroups {
     //! A copy constructor.
     //!
     //! Constructs a Bipartition that is mathematically equal to \p copy.
-    Bipartition(Bipartition const&) = default;
+    Bipartition(Bipartition const&);
 
     //! A constructor.
     //!

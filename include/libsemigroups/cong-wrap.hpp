@@ -262,5 +262,6 @@ namespace libsemigroups {
   //////////////////////////////////////////////////////////////////////////
   template <typename T>
   CongruenceWrapper<T>::~CongruenceWrapper() = default;
+
 }  // namespace libsemigroups
 #endif  // LIBSEMIGROUPS_CONG_WRAP_HPP_

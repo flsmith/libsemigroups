@@ -232,6 +232,8 @@ namespace libsemigroups {
         _trans_blocks_lookup(),
         _rank(UNDEFINED) {}
 
+  Bipartition::Bipartition(Bipartition const&) = default;
+
   Bipartition::Bipartition(size_t degree) : Bipartition() {
     this->_vector.resize(2 * degree);
   }
