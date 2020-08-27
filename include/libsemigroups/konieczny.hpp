@@ -41,11 +41,11 @@
 #include "action.hpp"                   // for LeftAction, RightAction
 #include "adapters.hpp"                 // for Lambda, etc
 #include "bruidhinn-traits.hpp"         // for BruidhinnTraits
-#include "cache.hpp"                    // for detail::Cache
 #include "constants.hpp"                // for UNDEFINED
 #include "element-adapters.hpp"         // for Rank
 #include "libsemigroups-debug.hpp"      // for LIBSEMIGROUPS_ASSERT
 #include "libsemigroups-exception.hpp"  // for LIBSEMIGROUPS_EXCEPTION
+#include "pool.hpp"                     // for detail::Pool
 #include "report.hpp"                   // for REPORT_DEFAULT
 #include "runner.hpp"                   // for Runner
 #include "timer.hpp"                    // for Timer
@@ -362,7 +362,7 @@ namespace libsemigroups {
           _D_rels(),
           _data_initialised(false),
           _degree(UNDEFINED),
-          _element_cache(),
+          _element_pool(),
           _gens(),
           _group_indices(),
           _group_indices_rev(),
@@ -860,7 +860,7 @@ namespace libsemigroups {
     }
 
    private:
-    using CacheGuard = detail::CacheGuard<internal_element_type>;
+    using PoolGuard = detail::PoolGuard<internal_element_type>;
 
     ////////////////////////////////////////////////////////////////////////
     // Konieczny - utility methods - private
@@ -874,7 +874,7 @@ namespace libsemigroups {
       // TODO(later): how to best decide which side to calculate? One is often
       // faster
       if (_lambda_orb.size() < _rho_orb.size()) {
-        CacheGuard            cg(_element_cache);
+        PoolGuard             cg(_element_pool);
         internal_element_type tmp = cg.get();
         for (left_indices_index_type i = 0; i < D._left_reps.size(); ++i) {
           internal_element_type w = D._left_reps[i];
@@ -900,7 +900,7 @@ namespace libsemigroups {
           }
         }
       } else {
-        CacheGuard            cg(_element_cache);
+        PoolGuard             cg(_element_pool);
         internal_element_type tmp = cg.get();
         for (right_indices_index_type i = 0; i < D._right_reps.size(); ++i) {
           internal_element_type z = D._right_reps[i];
@@ -954,8 +954,8 @@ namespace libsemigroups {
       if (_group_indices.find(key) != _group_indices.end()) {
         return _group_indices.at(key);
       } else {
-        CacheGuard            cg1(_element_cache);
-        CacheGuard            cg2(_element_cache);
+        PoolGuard             cg1(_element_pool);
+        PoolGuard             cg2(_element_pool);
         internal_element_type tmp1 = cg1.get();
         internal_element_type tmp2 = cg2.get();
 
@@ -995,9 +995,9 @@ namespace libsemigroups {
       if (_group_indices_rev.find(key) != _group_indices_rev.end()) {
         return _group_indices_rev.at(key);
       } else {
-        CacheGuard            cg1(_element_cache);
+        PoolGuard             cg1(_element_pool);
         internal_element_type tmp1 = cg1.get();
-        CacheGuard            cg2(_element_cache);
+        PoolGuard             cg2(_element_pool);
         internal_element_type tmp2 = cg2.get();
 
         Product()(this->to_external(tmp1),
@@ -1025,7 +1025,7 @@ namespace libsemigroups {
     void idem_in_H_class(internal_reference       res,
                          internal_const_reference x) const {
       this->to_external(res) = this->to_external_const(x);
-      CacheGuard            cg(_element_cache);
+      PoolGuard             cg(_element_pool);
       internal_element_type tmp = cg.get();
       do {
         Swap()(this->to_external(res), this->to_external(tmp));
@@ -1043,7 +1043,7 @@ namespace libsemigroups {
     // modifies _tmp_lambda_value1
     void make_idem(internal_reference x) {
       LIBSEMIGROUPS_ASSERT(is_regular_element_NC(x));
-      CacheGuard            cg1(_element_cache);
+      PoolGuard             cg1(_element_pool);
       internal_element_type tmp1 = cg1.get();
 
       Product()(this->to_external(tmp1),
@@ -1057,7 +1057,7 @@ namespace libsemigroups {
       Lambda()(_tmp_lambda_value1, this->to_external_const(x));
       lambda_orb_index_type pos = _lambda_orb.position(_tmp_lambda_value1);
 
-      CacheGuard            cg2(_element_cache);
+      PoolGuard             cg2(_element_pool);
       internal_element_type tmp2 = cg2.get();
       Product()(this->to_external(tmp1),
                 this->to_external_const(x),
@@ -1076,7 +1076,7 @@ namespace libsemigroups {
     void group_inverse(internal_element_type&   res,
                        internal_const_reference id,
                        internal_const_reference x) const {
-      CacheGuard            cg(_element_cache);
+      PoolGuard             cg(_element_pool);
       internal_element_type tmp = cg.get();
       this->to_external(tmp)    = this->to_external_const(x);
       do {
@@ -1091,7 +1091,7 @@ namespace libsemigroups {
     // modifies _tmp_lambda_value and _tmp_rho_value
     bool is_group_index(internal_const_reference x,
                         internal_const_reference y) const {
-      CacheGuard            cg(_element_cache);
+      PoolGuard             cg(_element_pool);
       internal_element_type tmp = cg.get();
 
       Product()(this->to_external(tmp),
@@ -1183,8 +1183,8 @@ namespace libsemigroups {
       return _gens.cend();
     }
 
-    detail::Cache<internal_element_type>& element_cache() const {
-      return _element_cache;
+    detail::Pool<internal_element_type>& element_pool() const {
+      return _element_pool;
     }
 
     size_t max_rank() const noexcept {
@@ -1220,7 +1220,7 @@ namespace libsemigroups {
       _one = this->to_internal(One()(x));
       _gens.push_back(_one);  // TODO(later): maybe not this
 
-      _element_cache.push(_one, 6);
+      _element_pool.push(_one, 6);
 
       _rank_state = new rank_state_type(cbegin_generators(), cend_generators());
       LIBSEMIGROUPS_ASSERT((_rank_state == nullptr)
@@ -1316,7 +1316,7 @@ namespace libsemigroups {
     std::vector<std::vector<D_class_index_type>> _D_rels;
     bool                                         _data_initialised;
     size_t                                       _degree;
-    mutable detail::Cache<internal_element_type> _element_cache;
+    mutable detail::Pool<internal_element_type>  _element_pool;
     std::vector<internal_element_type>           _gens;
     std::unordered_map<std::pair<rho_orb_index_type, lambda_orb_scc_index_type>,
                        lambda_orb_index_type,
@@ -1713,8 +1713,8 @@ namespace libsemigroups {
     void push_left_mult(internal_const_reference x) {
       _left_mults.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
-      CacheGuard            cg2(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
+      PoolGuard             cg2(_parent->element_pool());
       internal_element_type tmp1 = cg1.get();
       internal_element_type tmp2 = cg2.get();
       if (_left_reps.size() >= _left_mults.size()) {
@@ -1741,8 +1741,8 @@ namespace libsemigroups {
     void push_left_mult_inv(internal_const_reference x) {
       _left_mults_inv.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
-      CacheGuard            cg2(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
+      PoolGuard             cg2(_parent->element_pool());
       internal_element_type tmp1 = cg1.get();
       internal_element_type tmp2 = cg2.get();
       if (_left_reps.size() >= _left_mults_inv.size()) {
@@ -1768,8 +1768,8 @@ namespace libsemigroups {
     void push_right_mult(internal_const_reference x) {
       _right_mults.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
-      CacheGuard            cg2(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
+      PoolGuard             cg2(_parent->element_pool());
       internal_element_type tmp1 = cg1.get();
       internal_element_type tmp2 = cg2.get();
       if (_right_reps.size() >= _right_mults.size()) {
@@ -1796,8 +1796,8 @@ namespace libsemigroups {
     void push_right_mult_inv(internal_const_reference x) {
       _right_mults_inv.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
-      CacheGuard            cg2(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
+      PoolGuard             cg2(_parent->element_pool());
       internal_element_type tmp1 = cg1.get();
       internal_element_type tmp2 = cg2.get();
       if (_right_reps.size() >= _right_mults_inv.size()) {
@@ -1823,7 +1823,7 @@ namespace libsemigroups {
     void push_left_rep(internal_const_reference x) {
       _left_reps.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
       internal_element_type tmp = cg1.get();
       if (_left_mults.size() >= _left_reps.size()) {
         Product()(this->to_external(tmp),
@@ -1845,7 +1845,7 @@ namespace libsemigroups {
     void push_right_rep(internal_const_reference x) {
       _right_reps.push_back(this->internal_copy(x));
 #ifdef LIBSEMIGROUPS_DEBUG
-      CacheGuard            cg1(_parent->element_cache());
+      PoolGuard             cg1(_parent->element_pool());
       internal_element_type tmp = cg1.get();
       if (_right_mults.size() >= _right_reps.size()) {
         Product()(this->to_external(tmp),
@@ -2110,8 +2110,8 @@ namespace libsemigroups {
       parent->make_idem(this->unsafe_rep());
       init();
 #if LIBSEMIGROUPS_DEBUG
-      CacheGuard cg(this->parent()->element_cache());
-      auto       tmp = cg.get();
+      PoolGuard cg(this->parent()->element_pool());
+      auto      tmp = cg.get();
       Product()(this->to_external(tmp), this->rep(), this->rep());
       LIBSEMIGROUPS_ASSERT(EqualTo()(this->to_external(tmp), this->rep()));
 #endif
@@ -2146,10 +2146,10 @@ namespace libsemigroups {
           || r_it == _rho_index_positions.end()) {
         return false;
       }
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
       Product()(this->to_external(tmp1),
                 x,
                 this->to_external_const(this->left_mults_inv(l_it->second)));
@@ -2249,10 +2249,10 @@ namespace libsemigroups {
         this->left_indices().push_back(*it);
         // TODO(later) prove this works
 #ifdef LIBSEMIGROUPS_DEBUG
-        CacheGuard cg(this->parent()->element_cache());
-        CacheGuard cg2(this->parent()->element_cache());
-        auto       tmp  = cg.get();
-        auto       tmp2 = cg2.get();
+        PoolGuard cg(this->parent()->element_pool());
+        PoolGuard cg2(this->parent()->element_pool());
+        auto      tmp  = cg.get();
+        auto      tmp2 = cg2.get();
         Product()(this->to_external(tmp),
                   this->parent()->_lambda_orb.multiplier_to_scc_root(lval_pos),
                   this->parent()->_lambda_orb.multiplier_from_scc_root(*it));
@@ -2287,10 +2287,10 @@ namespace libsemigroups {
         _rho_index_positions.emplace(*it, this->right_indices().size());
         this->right_indices().push_back(*it);
 #ifdef LIBSEMIGROUPS_DEBUG
-        CacheGuard cg(this->parent()->element_cache());
-        CacheGuard cg2(this->parent()->element_cache());
-        auto       tmp  = cg.get();
-        auto       tmp2 = cg2.get();
+        PoolGuard cg(this->parent()->element_pool());
+        PoolGuard cg2(this->parent()->element_pool());
+        auto      tmp  = cg.get();
+        auto      tmp2 = cg2.get();
         Product()(this->to_external(tmp),
                   this->parent()->_rho_orb.multiplier_from_scc_root(*it),
                   this->parent()->_rho_orb.multiplier_to_scc_root(rval_pos));
@@ -2345,8 +2345,8 @@ namespace libsemigroups {
       rho_value_type     rval     = this->tmp_rho_value();
       rho_orb_index_type rval_pos = this->parent()->_rho_orb.position(rval);
 
-      CacheGuard cg(this->parent()->element_cache());
-      auto       tmp = cg.get();
+      PoolGuard cg(this->parent()->element_pool());
+      auto      tmp = cg.get();
 
       for (auto lidx_it = this->cbegin_left_indices();
            lidx_it < this->cend_left_indices();
@@ -2387,8 +2387,8 @@ namespace libsemigroups {
 
       compute_mults();
 
-      CacheGuard cg(this->parent()->element_cache());
-      auto       tmp = cg.get();
+      PoolGuard cg(this->parent()->element_pool());
+      auto      tmp = cg.get();
 
       for (auto it = this->cbegin_left_mults(); it < this->cend_left_mults();
            ++it) {
@@ -2414,12 +2414,12 @@ namespace libsemigroups {
       // internal vec represents right inverses
       this->internal_vec().clear();
 
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      CacheGuard cg3(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
-      auto       tmp3 = cg3.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      PoolGuard cg3(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
+      auto      tmp3 = cg3.get();
 
       for (auto lrep_it = this->cbegin_left_reps();
            lrep_it < this->cend_left_reps();
@@ -2484,12 +2484,12 @@ namespace libsemigroups {
       _left_idem_reps.clear();
       _right_idem_reps.clear();
 
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      CacheGuard cg3(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
-      auto       tmp3 = cg3.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      PoolGuard cg3(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
+      auto      tmp3 = cg3.get();
 
       // TODO(later): use information from the looping through the left indices
       // in the loop through the right indices
@@ -2552,8 +2552,8 @@ namespace libsemigroups {
         this->push_back_H_class(*it);
       }
 
-      CacheGuard cg(this->parent()->element_cache());
-      auto       tmp = cg.get();
+      PoolGuard cg(this->parent()->element_pool());
+      auto      tmp = cg.get();
 
       for (size_t i = 0; i < this->size_H_class_NC(); ++i) {
         for (internal_const_reference g : _H_gens) {
@@ -2742,10 +2742,10 @@ namespace libsemigroups {
       if (_rho_index_positions.find(rpos) == _rho_index_positions.end()) {
         return false;
       }
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
       for (left_indices_index_type i : _lambda_index_positions[lpos]) {
         Product()(this->to_external(tmp1),
                   this->to_external_const(x),
@@ -2784,10 +2784,10 @@ namespace libsemigroups {
         return;
       }
       // assumes that all D classes above this have already been calculated!
-      bool       left_found  = false;
-      bool       right_found = false;
-      CacheGuard cg(this->parent()->element_cache());
-      auto       tmp = cg.get();
+      bool      left_found  = false;
+      bool      right_found = false;
+      PoolGuard cg(this->parent()->element_pool());
+      auto      tmp = cg.get();
 
       for (auto it = this->parent()->_regular_D_classes.rbegin();
 
@@ -2866,10 +2866,10 @@ namespace libsemigroups {
       internal_const_element_type right_idem_right_mult
           = _right_idem_class->cbegin_right_mults()[right_idem_indices.second];
 
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
       for (auto it = _left_idem_class->cbegin_H_class();
            it < _left_idem_class->cend_H_class();
            it++) {
@@ -3026,14 +3026,14 @@ namespace libsemigroups {
           hHx_set;
       hHx_set.clear();
 
-      CacheGuard cg1(this->parent()->element_cache());
-      CacheGuard cg2(this->parent()->element_cache());
-      CacheGuard cg3(this->parent()->element_cache());
-      CacheGuard cg4(this->parent()->element_cache());
-      auto       tmp1 = cg1.get();
-      auto       tmp2 = cg2.get();
-      auto       tmp3 = cg3.get();
-      auto       tmp4 = cg4.get();
+      PoolGuard cg1(this->parent()->element_pool());
+      PoolGuard cg2(this->parent()->element_pool());
+      PoolGuard cg3(this->parent()->element_pool());
+      PoolGuard cg4(this->parent()->element_pool());
+      auto      tmp1 = cg1.get();
+      auto      tmp2 = cg2.get();
+      auto      tmp3 = cg3.get();
+      auto      tmp4 = cg4.get();
       for (internal_const_reference h : _left_idem_H_class) {
         static std::vector<internal_element_type> Hxh;
         LIBSEMIGROUPS_ASSERT(Hxh.empty());

@@ -1,6 +1,6 @@
 //
 // libsemigroups - C++ library for semigroups and monoids
-// Copyright (C) 2020
+// Copyright (C) 2020 James D. Mitchell
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file contains an implementation of caches, which provide an easy
+// This file contains an implementation of a pool, which provide an easy
 // way to manage temporary elements while avoiding unnecessary memory
 // allocation.
 
-#ifndef LIBSEMIGROUPS_CACHE_HPP_
-#define LIBSEMIGROUPS_CACHE_HPP_
+#ifndef LIBSEMIGROUPS_POOL_HPP_
+#define LIBSEMIGROUPS_POOL_HPP_
 
 #include <list>           // for list
 #include <stack>          // for stack
@@ -34,10 +34,10 @@ namespace libsemigroups {
 
     // Declarations
     template <typename T, typename = void>
-    class Cache;
+    class Pool;
 
     template <typename T, typename = void>
-    class CacheGuard;
+    class PoolGuard;
 
     // Helpers
     template <typename T>
@@ -48,26 +48,26 @@ namespace libsemigroups {
     using is_non_pointer_t =
         typename std::enable_if<!std::is_pointer<T>::value>::type;
 
-    // Cache for non-pointer types, these are intended to be used with the
+    // Pool for non-pointer types, these are intended to be used with the
     // T = BruidhinnTraits::internal_value_type, and so the non-pointer objects
     // should be small and easy to copy. There are only versions for pointer
     // and non-pointer types as BruidhinnTraits::internal_value_type is always
     // one of these two. It's your responsibility to ensure that the
     // non-pointer type is actually small and easy to copy.
     template <typename T>
-    class Cache<T, is_non_pointer_t<T>> final {
+    class Pool<T, is_non_pointer_t<T>> final {
       static_assert(std::is_default_constructible<T>::value,
-                    "Cache<T> requires T to be default-constructible");
+                    "Pool<T> requires T to be default-constructible");
 
      public:
-      Cache()  = default;
-      ~Cache() = default;
+      Pool()  = default;
+      ~Pool() = default;
 
       // Deleted other constructors to avoid unintentional copying
-      Cache(Cache const&) = delete;
-      Cache(Cache&&)      = delete;
-      Cache& operator=(Cache const&) = delete;
-      Cache& operator=(Cache&&) = delete;
+      Pool(Pool const&) = delete;
+      Pool(Pool&&)      = delete;
+      Pool& operator=(Pool const&) = delete;
+      Pool& operator=(Pool&&) = delete;
 
       T acquire() {
         return T();
@@ -79,11 +79,11 @@ namespace libsemigroups {
     };
 
     template <typename T>
-    class Cache<T, is_pointer_t<T>> final {
+    class Pool<T, is_pointer_t<T>> final {
      public:
       // Not noexcept because default constructors of, say, std::list isn't
-      Cache() = default;
-      ~Cache() {
+      Pool() = default;
+      ~Pool() {
         while (!_acquirable.empty()) {
           delete _acquirable.top();
           _acquirable.pop();
@@ -95,10 +95,10 @@ namespace libsemigroups {
       }
 
       // Deleted other constructors to avoid unintentional copying
-      Cache(Cache const&) = delete;
-      Cache(Cache&&)      = delete;
-      Cache& operator=(Cache const&) = delete;
-      Cache& operator=(Cache&&) = delete;
+      Pool(Pool const&) = delete;
+      Pool(Pool&&)      = delete;
+      Pool& operator=(Pool const&) = delete;
+      Pool& operator=(Pool&&) = delete;
 
       // Not noexcept because it can throw
       T acquire() {
@@ -118,7 +118,7 @@ namespace libsemigroups {
         auto it = _map.find(ptr);
         if (it == _map.end()) {
           LIBSEMIGROUPS_EXCEPTION("attempted to release an object which is "
-                                  "not owned by this cache");
+                                  "not owned by this pool");
         }
         _acquired.erase(it->second);
         _map.erase(it);
@@ -138,61 +138,61 @@ namespace libsemigroups {
       std::unordered_map<T, typename std::list<T>::iterator> _map;
     };
 
-    // A cache guard acquires an element from the cache on construction and
+    // A pool guard acquires an element from the pool on construction and
     // releases it on destruction. This version doesn't do anything, it's based
     // on the assumption that the type T is small and easy to copy.
     template <typename T>
-    class CacheGuard<T, is_non_pointer_t<T>> final {
+    class PoolGuard<T, is_non_pointer_t<T>> final {
       static_assert(std::is_default_constructible<T>::value,
-                    "CacheGuard<T> requires T to be default-constructible");
+                    "PoolGuard<T> requires T to be default-constructible");
 
      public:
-      explicit CacheGuard(Cache<T> const&) {}
-      ~CacheGuard() = default;
+      explicit PoolGuard(Pool<T> const&) {}
+      ~PoolGuard() = default;
 
       // Deleted other constructors to avoid unintentional copying
-      CacheGuard()                  = delete;
-      CacheGuard(CacheGuard const&) = delete;
-      CacheGuard(CacheGuard&&)      = delete;
-      CacheGuard& operator=(CacheGuard const&) = delete;
-      CacheGuard& operator=(CacheGuard&&) = delete;
+      PoolGuard()                  = delete;
+      PoolGuard(PoolGuard const&) = delete;
+      PoolGuard(PoolGuard&&)      = delete;
+      PoolGuard& operator=(PoolGuard const&) = delete;
+      PoolGuard& operator=(PoolGuard&&) = delete;
 
-      // Get the element acquired from the cache
+      // Get the element acquired from the pool
       T get() const noexcept {
         return T();
       }
     };
 
-    // A cache guard acquires an element from the cache on construction and
+    // A pool guard acquires an element from the pool on construction and
     // releases it on destruction.
     template <typename T>
-    class CacheGuard<T, is_pointer_t<T>> final {
+    class PoolGuard<T, is_pointer_t<T>> final {
      public:
-      explicit CacheGuard(Cache<T>& cache)
-          : _cache(cache), _tmp(cache.acquire()) {}
+      explicit PoolGuard(Pool<T>& pool)
+          : _pool(pool), _tmp(pool.acquire()) {}
 
-      ~CacheGuard() {
-        _cache.release(_tmp);
+      ~PoolGuard() {
+        _pool.release(_tmp);
       }
 
       // Deleted other constructors to avoid unintentional copying
-      CacheGuard()                  = delete;
-      CacheGuard(CacheGuard const&) = delete;
-      CacheGuard(CacheGuard&&)      = delete;
-      CacheGuard& operator=(CacheGuard const&) = delete;
-      CacheGuard& operator=(CacheGuard&&) = delete;
+      PoolGuard()                  = delete;
+      PoolGuard(PoolGuard const&) = delete;
+      PoolGuard(PoolGuard&&)      = delete;
+      PoolGuard& operator=(PoolGuard const&) = delete;
+      PoolGuard& operator=(PoolGuard&&) = delete;
 
-      // Get the element acquired from the cache
+      // Get the element acquired from the pool
       T get() const noexcept {
         return _tmp;
       }
 
      private:
-      Cache<T>& _cache;
+      Pool<T>& _pool;
       T         _tmp;
     };
 
   }  // namespace detail
 }  // namespace libsemigroups
 
-#endif  // LIBSEMIGROUPS_CACHE_HPP_
+#endif  // LIBSEMIGROUPS_POOL_HPP_
