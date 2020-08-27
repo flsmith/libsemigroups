@@ -61,4 +61,6 @@ libsemigroups::Konieczny:
   - cbegin_D_classes
   - cend_D_classes
   - cbegin_regular_D_classes
+  - cbegin_rdc
   - cend_regular_D_classes
+  - cend_rdc

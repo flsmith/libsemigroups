@@ -832,9 +832,9 @@ namespace libsemigroups {
   template <>
   struct LambdaValue<BooleanMat> {
     static constexpr size_t N = BitSet<1>::max_size();
-    //! For BooleanMats, \type is StaticVector1<BitSet<N>, N>, where \c N is the
-    //! maximum width of BitSet on the system. This represents the row space
-    //! basis of the PartialPerms.
+    //! For BooleanMats, \c type is StaticVector1<BitSet<N>, N>, where \c N is
+    //! the maximum width of BitSet on the system. This represents the row space
+    //! basis of the BooleanMats.
     using type                = detail::StaticVector1<BitSet<N>, N>;
   };
 
@@ -845,9 +845,9 @@ namespace libsemigroups {
   //! \sa RhoValue.
   template <>
   struct RhoValue<BooleanMat> {
-    //! For BooleanMats, \type is StaticVector1<BitSet<N>, N>, where \c N is the
-    //! maximum width of BitSet on the system. This represents the column space
-    //! basis of the PartialPerms.
+    //! For BooleanMats, \c type is StaticVector1<BitSet<N>, N>, where \c N is
+    //! the maximum width of BitSet on the system. This represents the column
+    //! space basis of the BooleanMats.
     using type = typename LambdaValue<BooleanMat>::type;
   };
 
@@ -889,7 +889,7 @@ namespace libsemigroups {
   //! Specialization of the adapter Rho for instances of Transformation and
   //! std::vector<BitSet<N>> or StaticVector1<BitSet<N>>.
   //!
-  //! \sa Rho.
+  //! \sa Lambda.
   template <typename T>
   struct Rho<BooleanMat, T> {
     //! Modifies \p res to contain the column space basis of \p x.

@@ -588,6 +588,8 @@ namespace libsemigroups {
   //! The second template parameter exists for SFINAE in overload resolution.
   //!
   //! \par Used by KoniecznyTraits.
+  // Note: this has to exist in order to allow different lambda functions based
+  // on type.
   template <typename TElementType, typename = void>
   struct LambdaValue;
 
@@ -602,6 +604,8 @@ namespace libsemigroups {
   //! The second template parameter exists for SFINAE in overload resolution.
   //!
   //! \par Used by KoniecznyTraits.
+  // Note: this has to exist in order to allow different rho functions based
+  // on type.
   template <typename TElementType, typename = void>
   struct RhoValue;
 
@@ -609,12 +613,10 @@ namespace libsemigroups {
   //!
   //! This type should be a stateless trivially default constructible
   //! with an operator of signature `void
-  //! operator()(TPointType&, TElementType const&)`.
-  //!
-  //! The first call operator should modify the first argument in-place to
-  //! contain the lambda value of the second argument. The kernel of the lambda
-  //! function should be Green's \f$\mathscr{L}\f$-relation on the semigroup in
-  //! question.
+  //! operator()(TPointType&, TElementType const&)`, which should modify the
+  //! first argument in-place to contain the lambda value of the second
+  //! argument. The kernel of the lambda function should be Green's
+  //! \f$\mathscr{L}\f$-relation on the semigroup in question.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //! \tparam TPointType the type of the lambda points.
@@ -627,12 +629,10 @@ namespace libsemigroups {
   //!
   //! This type should be a stateless trivially default constructible
   //! with an operator of signature `void
-  //! operator()(TPointType&, TElementType const&)`.
-  //!
-  //! The first call operator should modify the first argument in-place to
-  //! contain the rho value of the second argument. The kernel of the rho
-  //! function should be Green's \f$\mathscr{R}\f$-relation on the semigroup in
-  //! question.
+  //! operator()(TPointType&, TElementType const&)`, which  should modify the
+  //! first argument in-place to contain the rho value of the second argument.
+  //! The kernel of the rho function should be Green's
+  //! \f$\mathscr{R}\f$-relation on the semigroup in question.
   //!
   //! \tparam TElementType the type of the semigroup elements.
   //! \tparam TPointType the type of the rho points.
