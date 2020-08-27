@@ -312,7 +312,7 @@ namespace libsemigroups {
       //! is defined by the data in the vector.
       ElementWithVectorData(ElementWithVectorData const&);
 
-      ElementWithVectorData(ElementWithVectorData&&)      = default;
+      ElementWithVectorData(ElementWithVectorData&&) = default;
       ElementWithVectorData& operator=(ElementWithVectorData const&) = default;
       ElementWithVectorData& operator=(ElementWithVectorData&&) = default;
 
@@ -486,6 +486,34 @@ namespace libsemigroups {
       std::vector<TValueType> _vector;
     };
 
+    ////////////////////////////////////////////////////////////////////////
+    // ElementWithVectorData constructor impl
+    ////////////////////////////////////////////////////////////////////////
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData()
+        : Element(), _vector() {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        size_t n)
+        : Element(), _vector(n) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        std::vector<TValueType> const& vector)
+        : Element(), _vector(vector) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        std::vector<TValueType>&& vec)
+        : Element(), _vector(std::move(vec)) {}
+
+    template <typename TValueType, typename TSubclass>
+    ElementWithVectorData<TValueType, TSubclass>::ElementWithVectorData(
+        ElementWithVectorData const& copy)
+        : Element(copy._hash_value),
+          _vector(copy._vector.cbegin(), copy._vector.cend()) {}
+
     //! Abstract base class for elements using a vector to store their defining
     //! data and the default hash function for that underlying vector.
     //!
@@ -510,6 +538,15 @@ namespace libsemigroups {
         this->_hash_value = this->vector_hash(this->_vector);
       }
     };
+
+    ////////////////////////////////////////////////////////////////////////
+    // ElementWithVectorDataDefaultHash constructor impl
+    ////////////////////////////////////////////////////////////////////////
+    template <typename TValueType, class TSubclass>
+    ElementWithVectorDataDefaultHash<TValueType, TSubclass>::
+        ElementWithVectorDataDefaultHash()
+        : ElementWithVectorData<TValueType, TSubclass>() {}
+
   }  // namespace detail
 
   //! Abstract class for partial transformations.
@@ -654,7 +691,7 @@ namespace libsemigroups {
   PartialTransformation<TValueType, TSubclass>::PartialTransformation(
       std::initializer_list<TValueType> imgs)
       : PartialTransformation<TValueType, TSubclass>(
-            std::vector<TValueType>(imgs)) {}
+          std::vector<TValueType>(imgs)) {}
 
   template <typename TValueType, typename TSubclass>
   std::vector<bool> PartialTransformation<TValueType, TSubclass>::_lookup

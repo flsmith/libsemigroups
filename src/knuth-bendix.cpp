@@ -394,7 +394,7 @@ namespace libsemigroups {
       set_nr_generators(S->nr_generators());
       set_parent_froidure_pin(S);
     }
-    
+
     KnuthBendix::~KnuthBendix() = default;
 
     ////////////////////////////////////////////////////////////////////////////

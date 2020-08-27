@@ -38,8 +38,7 @@ namespace libsemigroups {
   constexpr bool REPORT = false;
 
   namespace {
-    void test_idempotent(FroidurePin<Element const*>& S,
-        Element const*               x) {
+    void test_idempotent(FroidurePin<Element const*>& S, Element const* x) {
       REQUIRE(S.is_idempotent(S.position(x)));
       Element* y = x->heap_copy();
       y->redefine(x, x);
@@ -49,11 +48,11 @@ namespace libsemigroups {
     }
 
     template <typename TElementType>
-      void delete_gens(std::vector<TElementType>& gens) {
-        for (auto x : gens) {
-          delete x;
-        }
+    void delete_gens(std::vector<TElementType>& gens) {
+      for (auto x : gens) {
+        delete x;
       }
+    }
 
     void test_rules_iterator(FroidurePin<Element const*>& S) {
       size_t nr = 0;
@@ -63,7 +62,7 @@ namespace libsemigroups {
       }
       REQUIRE(nr == S.current_nr_rules());
     }
-  }
+  }  // namespace
 
   LIBSEMIGROUPS_TEST_CASE("FroidurePin",
                           "017",

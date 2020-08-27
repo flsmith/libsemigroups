@@ -617,9 +617,8 @@ namespace libsemigroups {
     // Not noexcept because std::count isn't
     size_t nr_edges() const {
       return _dynamic_array_2.nr_rows() * _dynamic_array_2.nr_cols()
-             - std::count(_dynamic_array_2.cbegin(),
-                          _dynamic_array_2.cend(),
-                          UNDEFINED);
+             - std::count(
+                 _dynamic_array_2.cbegin(), _dynamic_array_2.cend(), UNDEFINED);
     }
 
     //! Returns the number of edges leaving a node.
@@ -1552,16 +1551,16 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_reference
+        operator()(internal_iterator_type const& it) const noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer operator()(internal_iterator_type const& it) const
-            noexcept {
+        const_pointer
+        operator()(internal_iterator_type const& it) const noexcept {
           return &it->first;
         }
       };
@@ -2001,18 +2000,17 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference operator()(state_type&,
-                                   internal_iterator_type const& it) const
-            noexcept {
+        const_reference
+        operator()(state_type&,
+                   internal_iterator_type const& it) const noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer operator()(state_type&,
-                                 internal_iterator_type const& it) const
-            noexcept {
+        const_pointer operator()(state_type&, internal_iterator_type const& it)
+            const noexcept {
           return &it->first;
         }
       };
@@ -2873,13 +2871,13 @@ namespace libsemigroups {
                          [this, source](node_type const n) {
                            return n != UNDEFINED
                                   && action_digraph_helper::is_reachable(
-                                         *this, n, source);
+                                      *this, n, source);
                          })) {
         return true;
       } else if (source != target
                  && action_digraph_helper::is_reachable(*this, source, target)
                  && action_digraph_helper::is_reachable(
-                        *this, target, source)) {
+                     *this, target, source)) {
         return true;
       }
     }

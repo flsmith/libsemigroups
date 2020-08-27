@@ -27,18 +27,18 @@
 namespace libsemigroups {
 
   constexpr bool REPORT = false;
-namespace {
-  void test_it(Konieczny<BMat8>&           KS,
-               std::vector<BMat8>&         non_reg_reps,
-               size_t                      i,
-               std::array<size_t, 4> const v) {
-    Konieczny<BMat8>::DClass& X = KS.D_class_of_element(non_reg_reps[i]);
-    REQUIRE(X.size() == v[0]);
-    REQUIRE(X.size_H_class() == v[1]);
-    REQUIRE(X.number_of_L_classes() == v[2]);
-    REQUIRE(X.number_of_R_classes() == v[3]);
-  }
-}
+  namespace {
+    void test_it(Konieczny<BMat8>&           KS,
+                 std::vector<BMat8>&         non_reg_reps,
+                 size_t                      i,
+                 std::array<size_t, 4> const v) {
+      Konieczny<BMat8>::DClass& X = KS.D_class_of_element(non_reg_reps[i]);
+      REQUIRE(X.size() == v[0]);
+      REQUIRE(X.size_H_class() == v[1]);
+      REQUIRE(X.number_of_L_classes() == v[2]);
+      REQUIRE(X.number_of_R_classes() == v[3]);
+    }
+  }  // namespace
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "017",

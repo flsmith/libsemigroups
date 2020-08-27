@@ -280,13 +280,13 @@ namespace libsemigroups {
                                                       IteratorBaseAlias>::value)
           : IteratorBaseAlias(it), _state(stt) {}
 
-      IteratorStatefulBase(IteratorStatefulBase const&) = default;
-      IteratorStatefulBase& operator=(IteratorStatefulBase const&) = default;
+      IteratorStatefulBase(IteratorStatefulBase const&);
+      IteratorStatefulBase& operator=(IteratorStatefulBase const&);
 
-      IteratorStatefulBase(IteratorStatefulBase&&) = default;
-      IteratorStatefulBase& operator=(IteratorStatefulBase&&) = default;
+      IteratorStatefulBase(IteratorStatefulBase&&);
+      IteratorStatefulBase& operator=(IteratorStatefulBase&&);
 
-      virtual ~IteratorStatefulBase() = default;
+      virtual ~IteratorStatefulBase();
 
       state_type& get_state() const noexcept {
         return _state;
@@ -406,6 +406,28 @@ namespace libsemigroups {
      private:
       mutable state_type _state;
     };
+
+    template <typename S, typename T>
+    IteratorStatefulBase<S, T>::IteratorStatefulBase(
+        IteratorStatefulBase const&)
+        = default;
+
+    template <typename S, typename T>
+    IteratorStatefulBase<S, T>&
+    IteratorStatefulBase<S, T>::operator=(IteratorStatefulBase const&)
+        = default;
+
+    template <typename S, typename T>
+    IteratorStatefulBase<S, T>::IteratorStatefulBase(IteratorStatefulBase&&)
+        = default;
+
+    template <typename S, typename T>
+    IteratorStatefulBase<S, T>&
+    IteratorStatefulBase<S, T>::operator=(IteratorStatefulBase&&)
+        = default;
+
+    template <typename S, typename T>
+    IteratorStatefulBase<S, T>::~IteratorStatefulBase() = default;
 
     template <typename TSubclass, typename TIteratorTraits>
     class IteratorStatelessBase

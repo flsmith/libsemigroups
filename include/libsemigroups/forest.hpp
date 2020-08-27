@@ -235,7 +235,6 @@ namespace libsemigroups {
     std::vector<size_t> _parent;
   };
 
-  Forest::~Forest() = default;
 }  // namespace libsemigroups
 
 #endif  // LIBSEMIGROUPS_FOREST_HPP_

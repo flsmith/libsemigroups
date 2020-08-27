@@ -198,53 +198,54 @@ namespace libsemigroups {
   // The next function implements this order, returning the words on an
   // n-letter alphabet of length up to M.
   namespace {
-  std::vector<word_type> recursive_path_words(size_t n, size_t M) {
-    std::vector<word_type> out;
-    size_t                 a = 0;
-    for (size_t i = 0; i < M; ++i) {
-      out.push_back(word_type(i + 1, a));
-    }
-    a++;
-    int x = out.size();
-    int u = out.size();
-    int v = -1;  // -1 is the empty word
-    int w = -1;  // -1 is the empty word
-    out.push_back({a});
-    while (a < n) {
-      if (v < x - 1) {
-        do {
-          v++;
-        } while (v < x && out[u].size() + out[v].size() > M);
-        if (v < x && out[u].size() + out[v].size() <= M) {
-          word_type nxt = out[u];
-          nxt.insert(nxt.end(), out[v].begin(), out[v].end());
-          out.push_back(nxt);
-        }
-      } else {
-        do {
-          w++;
-        } while (static_cast<size_t>(w) < out.size() && out[w].size() + 1 > M);
-        if (static_cast<size_t>(w) < out.size()) {
-          word_type nxt = out[w];
-          u             = out.size();
-          v             = -1;
-          nxt.push_back(a);
-          out.push_back(nxt);
+    std::vector<word_type> recursive_path_words(size_t n, size_t M) {
+      std::vector<word_type> out;
+      size_t                 a = 0;
+      for (size_t i = 0; i < M; ++i) {
+        out.push_back(word_type(i + 1, a));
+      }
+      a++;
+      int x = out.size();
+      int u = out.size();
+      int v = -1;  // -1 is the empty word
+      int w = -1;  // -1 is the empty word
+      out.push_back({a});
+      while (a < n) {
+        if (v < x - 1) {
+          do {
+            v++;
+          } while (v < x && out[u].size() + out[v].size() > M);
+          if (v < x && out[u].size() + out[v].size() <= M) {
+            word_type nxt = out[u];
+            nxt.insert(nxt.end(), out[v].begin(), out[v].end());
+            out.push_back(nxt);
+          }
         } else {
-          a++;
-          if (a < n) {
-            x = out.size();
-            u = out.size();
-            v = -1;
-            w = -1;
-            out.push_back({a});
+          do {
+            w++;
+          } while (static_cast<size_t>(w) < out.size()
+                   && out[w].size() + 1 > M);
+          if (static_cast<size_t>(w) < out.size()) {
+            word_type nxt = out[w];
+            u             = out.size();
+            v             = -1;
+            nxt.push_back(a);
+            out.push_back(nxt);
+          } else {
+            a++;
+            if (a < n) {
+              x = out.size();
+              u = out.size();
+              v = -1;
+              w = -1;
+              out.push_back({a});
+            }
           }
         }
       }
+      return out;
     }
-    return out;
-  }
-  }
+  }  // namespace
 
   namespace congruence {
     LIBSEMIGROUPS_TEST_CASE("ToddCoxeter",
