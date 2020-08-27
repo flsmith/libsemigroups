@@ -194,25 +194,19 @@ namespace libsemigroups {
     //! \f$O(mn)\f$ where \p m is the number of nodes, and \p n is
     //! the out-degree of the digraph.
     // Not noexcept
-    explicit ActionDigraph(T m = 0, T n = 0)
-        : _degree(n),
-          _nr_nodes(m),
-          _dynamic_array_2(_degree, _nr_nodes, UNDEFINED),
-          _scc_back_forest(),
-          _scc_forest(),
-          _scc() {}
+    explicit ActionDigraph(T m = 0, T n = 0);
 
     //! Default copy constructor
-    ActionDigraph(ActionDigraph const&) = default;
+    ActionDigraph(ActionDigraph const&);
 
     //! Default move constructor
-    ActionDigraph(ActionDigraph&&) = default;
+    ActionDigraph(ActionDigraph&&);
 
     //! Default copy assignment constructor
-    ActionDigraph& operator=(ActionDigraph const&) = default;
+    ActionDigraph& operator=(ActionDigraph const&);
 
     //! Default move assignment constructor
-    ActionDigraph& operator=(ActionDigraph&&) = default;
+    ActionDigraph& operator=(ActionDigraph&&);
 
     ~ActionDigraph();
 
@@ -1147,15 +1141,15 @@ namespace libsemigroups {
       // None of the constructors are noexcept because the corresponding
       // constructors for std::vector aren't (until C++17).
       //! No doc
-      const_panilo_iterator() = default;
+      const_panilo_iterator();
       //! No doc
       const_panilo_iterator(const_panilo_iterator const&);
       //! No doc
       const_panilo_iterator(const_panilo_iterator&&);
       //! No doc
-      const_panilo_iterator& operator=(const_panilo_iterator const&) = default;
+      const_panilo_iterator& operator=(const_panilo_iterator const&);
       //! No doc
-      const_panilo_iterator& operator=(const_panilo_iterator&&) = default;
+      const_panilo_iterator& operator=(const_panilo_iterator&&);
       //! No doc
       ~const_panilo_iterator();
 
@@ -1752,17 +1746,17 @@ namespace libsemigroups {
       // None of the constructors are noexcept because the corresponding
       // constructors for std::vector aren't (until C++17).
       //! No doc
-      const_pstilo_iterator() = default;
+      const_pstilo_iterator();
       //! No doc
-      const_pstilo_iterator(const_pstilo_iterator const&) = default;
+      const_pstilo_iterator(const_pstilo_iterator const&);
       //! No doc
-      const_pstilo_iterator(const_pstilo_iterator&&) = default;
+      const_pstilo_iterator(const_pstilo_iterator&&);
       //! No doc
-      const_pstilo_iterator& operator=(const_pstilo_iterator const&) = default;
+      const_pstilo_iterator& operator=(const_pstilo_iterator const&);
       //! No doc
-      const_pstilo_iterator& operator=(const_pstilo_iterator&&) = default;
+      const_pstilo_iterator& operator=(const_pstilo_iterator&&);
       //! No doc
-      ~const_pstilo_iterator() = default;
+      ~const_pstilo_iterator();
 
       //! No doc
       const_pstilo_iterator(ActionDigraph const* ptr,
@@ -2773,8 +2767,38 @@ namespace libsemigroups {
     } _scc;
   };
 
+  //////////////////////////////////////////////////////////////////////////
+  // ActionDigraph - constructor/destructor implementations
+  //////////////////////////////////////////////////////////////////////////
+
   template <typename T>
   ActionDigraph<T>::~ActionDigraph() = default;
+
+  template <typename T>
+  ActionDigraph<T>::ActionDigraph(T m, T n)
+      : _degree(n),
+        _nr_nodes(m),
+        _dynamic_array_2(_degree, _nr_nodes, UNDEFINED),
+        _scc_back_forest(),
+        _scc_forest(),
+        _scc() {}
+
+  template <typename T>
+  ActionDigraph<T>::ActionDigraph(ActionDigraph const&) = default;
+
+  template <typename T>
+  ActionDigraph<T>::ActionDigraph(ActionDigraph&&) = default;
+
+  template <typename T>
+  ActionDigraph<T>& ActionDigraph<T>::operator=(ActionDigraph const&) = default;
+
+  template <typename T>
+  ActionDigraph<T>& ActionDigraph<T>::operator=(ActionDigraph&&) = default;
+
+  //////////////////////////////////////////////////////////////////////////
+  // ActionDigraph - panilo - constructor/destructor implementations
+  //////////////////////////////////////////////////////////////////////////
+
   template <typename T>
   ActionDigraph<T>::const_panilo_iterator::~const_panilo_iterator() = default;
 
@@ -2784,9 +2808,52 @@ namespace libsemigroups {
       = default;
 
   template <typename T>
+  ActionDigraph<T>::const_panilo_iterator::const_panilo_iterator() = default;
+
+  template <typename T>
+  typename ActionDigraph<T>::const_panilo_iterator&
+  ActionDigraph<T>::const_panilo_iterator::
+  operator=(const_panilo_iterator const&)
+      = default;
+
+  template <typename T>
+  typename ActionDigraph<T>::const_panilo_iterator&
+  ActionDigraph<T>::const_panilo_iterator::operator=(const_panilo_iterator&&)
+      = default;
+
+  template <typename T>
   ActionDigraph<T>::const_panilo_iterator::const_panilo_iterator(
       const_panilo_iterator&&)
       = default;
+
+  //////////////////////////////////////////////////////////////////////////
+  // ActionDigraph - pstilo - constructor/destructor implementations
+  //////////////////////////////////////////////////////////////////////////
+
+  template <typename T>
+  ActionDigraph<T>::const_pstilo_iterator::const_pstilo_iterator() = default;
+  template <typename T>
+  ActionDigraph<T>::const_pstilo_iterator::const_pstilo_iterator(
+      const_pstilo_iterator const&)
+      = default;
+  template <typename T>
+  ActionDigraph<T>::const_pstilo_iterator::const_pstilo_iterator(
+      const_pstilo_iterator&&)
+      = default;
+
+  template <typename T>
+  typename ActionDigraph<T>::const_pstilo_iterator&
+  ActionDigraph<T>::const_pstilo_iterator::
+  operator=(const_pstilo_iterator const&)
+      = default;
+
+  template <typename T>
+  typename ActionDigraph<T>::const_pstilo_iterator&
+  ActionDigraph<T>::const_pstilo_iterator::operator=(const_pstilo_iterator&&)
+      = default;
+
+  template <typename T>
+  ActionDigraph<T>::const_pstilo_iterator::~const_pstilo_iterator() = default;
 
   ////////////////////////////////////////////////////////////////////////
   // ActionDigraph - number_of_paths_special - private
