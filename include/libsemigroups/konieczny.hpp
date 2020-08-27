@@ -891,7 +891,7 @@ namespace libsemigroups {
       return get_lambda_group_index(x) != UNDEFINED;
     }
 
-    // Returns a lambda orb index corresponding to a group H class in the R-
+    // Returns a lambda orb index corresponding to a group H-class in the R-
     // class of \p x.
     // asserts its argument has lambda/rho values in the orbits.
     // modifies _tmp_lambda_value1
@@ -935,7 +935,7 @@ namespace libsemigroups {
       return UNDEFINED;
     }
 
-    // Finds a group index of a H class in the L class of \p x.
+    // Finds a group index of a H-class in the L-class of \p x.
     // modifies _tmp_lambda_value1
     // modifies _tmp_rho_value1
     rho_orb_index_type get_rho_group_index(internal_const_reference x) {
@@ -975,8 +975,8 @@ namespace libsemigroups {
       return UNDEFINED;
     }
 
-    //! Finds the idempotent in the H class of \p x. Note that it is assumed
-    //! that \p x is in a group H class.
+    //! Finds the idempotent in the H-class of \p x. Note that it is assumed
+    //! that \p x is in a group H-class.
     // TODO(later): it must be possible to do better than this
     void idem_in_H_class(internal_reference       res,
                          internal_const_reference x) const {
@@ -1026,8 +1026,8 @@ namespace libsemigroups {
       this->to_external(x) = this->to_external_const(tmp1);
     }
 
-    //! Finds the group inverse of \p x in its H class; i.e. the element \c y
-    //! in the H class of \p x such that <tt> xy = \p id</tt>. Will run
+    //! Finds the group inverse of \p x in its H-class; i.e. the element \c y
+    //! in the H-class of \p x such that <tt> xy = \p id</tt>. Will run
     //! forever if no such element exists.
     void group_inverse(internal_element_type&   res,
                        internal_const_reference id,
@@ -2816,7 +2816,7 @@ namespace libsemigroups {
       if (_idems_above_computed) {
         return;
       }
-      // assumes that all D classes above this have already been calculated!
+      // assumes that all D-classes above this have already been calculated!
       bool      left_found  = false;
       bool      right_found = false;
       PoolGuard cg(this->parent()->element_pool());

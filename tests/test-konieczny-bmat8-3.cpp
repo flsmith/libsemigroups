@@ -40,7 +40,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "017",
-                          "non-regular D classes 02",
+                          "non-regular D-classes 02",
                           "[quick][bmat8]") {
     auto                     rg = ReportGuard(REPORT);
     std::vector<BMat8> const gens

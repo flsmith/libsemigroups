@@ -71,7 +71,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "001",
-                          "regular D class 01",
+                          "regular D-class 01",
                           "[quick][bmat8]") {
     auto                     rg   = ReportGuard(REPORT);
     const std::vector<BMat8> gens = {BMat8({{0, 1, 0}, {0, 0, 1}, {1, 0, 0}}),
@@ -91,7 +91,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "002",
-                          "regular D class 02",
+                          "regular D-class 02",
                           "[quick][bmat8]") {
     auto                     rg = ReportGuard(REPORT);
     const std::vector<BMat8> gens
@@ -113,7 +113,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "003",
-                          "regular D class 04: contains",
+                          "regular D-class 04: contains",
                           "[quick][no-valgrind][bmat8]") {
     auto                     rg = ReportGuard(REPORT);
     const std::vector<BMat8> gens
@@ -131,7 +131,7 @@ namespace libsemigroups {
     BMat8 idem(BMat8({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
     Konieczny<BMat8>::DClass& D = KS.D_class_of_element(idem);
 
-    // test that the top D class contains only permutation matrices
+    // test that the top D-class contains only permutation matrices
     for (auto it = S.cbegin(); it < S.cend(); it++) {
       REQUIRE(D.contains(*it) == (((*it) * (*it).transpose()) == gens[0]));
     }
@@ -139,7 +139,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("Konieczny",
                           "004",
-                          "non-regular D classes 01",
+                          "non-regular D-classes 01",
                           "[quick][bmat8]") {
     auto                     rg    = ReportGuard(REPORT);
     const std::vector<BMat8> gens  = {BMat8({{0, 1, 0}, {0, 0, 1}, {1, 0, 0}}),
