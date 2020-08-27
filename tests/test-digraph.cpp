@@ -1211,7 +1211,6 @@ namespace libsemigroups {
 
     REQUIRE_THROWS_AS(ad.cbegin_panilo(6), LibsemigroupsException);
     REQUIRE(ad.cbegin_panilo(0, 1, 1) == ad.cend_panilo());
-
     REQUIRE_THROWS_AS(ad.cbegin_panislo(6), LibsemigroupsException);
     REQUIRE(ad.cbegin_panislo(0, 1, 1) == ad.cend_panislo());
 

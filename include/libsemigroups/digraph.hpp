@@ -623,8 +623,9 @@ namespace libsemigroups {
     // Not noexcept because std::count isn't
     size_t nr_edges() const {
       return _dynamic_array_2.nr_rows() * _dynamic_array_2.nr_cols()
-             - std::count(
-                 _dynamic_array_2.cbegin(), _dynamic_array_2.cend(), UNDEFINED);
+             - std::count(_dynamic_array_2.cbegin(),
+                          _dynamic_array_2.cend(),
+                          UNDEFINED);
     }
 
     //! Returns the number of edges leaving a node.
@@ -1169,7 +1170,7 @@ namespace libsemigroups {
             _min(min),
             _max(max),
             _nodes() {
-        if (_digraph != nullptr && _min < _max) {
+        if (_min < _max) {
           _nodes.push_back(source);
           if (_min != 0) {
             ++(*this);
@@ -1336,7 +1337,7 @@ namespace libsemigroups {
     //! \sa cbegin_panilo
     // not noexcept because constructors of const_panilo_iterator aren't
     const_panilo_iterator cend_panilo() const {
-      return const_panilo_iterator(nullptr, 0, 0, 0);
+      return const_panilo_iterator(this, 0, 0, 0);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1557,16 +1558,16 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference
-        operator()(internal_iterator_type const& it) const noexcept {
+        const_reference operator()(internal_iterator_type const& it) const
+            noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer
-        operator()(internal_iterator_type const& it) const noexcept {
+        const_pointer operator()(internal_iterator_type const& it) const
+            noexcept {
           return &it->first;
         }
       };
@@ -1776,7 +1777,7 @@ namespace libsemigroups {
             _max(max),
             _nodes(),
             _target(target) {
-        if (_digraph != nullptr && _min < _max) {
+        if (_min < _max) {
           _nodes.push_back(source);
           ++(*this);
         }
@@ -1985,7 +1986,7 @@ namespace libsemigroups {
     //! \sa cbegin_pstilo
     // not noexcept because const_pstilo_iterator constructors aren't
     const_pstilo_iterator cend_pstilo() const {
-      return const_pstilo_iterator(nullptr, 0, 0, 0, 0);
+      return const_pstilo_iterator(this, 0, 0, 0, 0);
     }
 
    private:
@@ -2006,17 +2007,18 @@ namespace libsemigroups {
 
       struct Deref {
         //! No doc
-        const_reference
-        operator()(state_type&,
-                   internal_iterator_type const& it) const noexcept {
+        const_reference operator()(state_type&,
+                                   internal_iterator_type const& it) const
+            noexcept {
           return it->first;
         }
       };
 
       struct AddressOf {
         //! No doc
-        const_pointer operator()(state_type&, internal_iterator_type const& it)
-            const noexcept {
+        const_pointer operator()(state_type&,
+                                 internal_iterator_type const& it) const
+            noexcept {
           return &it->first;
         }
       };
@@ -2804,13 +2806,13 @@ namespace libsemigroups {
                          [this, source](node_type const n) {
                            return n != UNDEFINED
                                   && action_digraph_helper::is_reachable(
-                                      *this, n, source);
+                                         *this, n, source);
                          })) {
         return true;
       } else if (source != target
                  && action_digraph_helper::is_reachable(*this, source, target)
                  && action_digraph_helper::is_reachable(
-                     *this, target, source)) {
+                        *this, target, source)) {
         return true;
       }
     }
