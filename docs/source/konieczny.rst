@@ -33,5 +33,3 @@ The classes implementing the Konieczny and Lallement-McFadden algorithm are:
    _generated/libsemigroups__konieczny
    _generated/libsemigroups__koniecznytraits
    _generated/libsemigroups__konieczny__dclass
-   _generated/libsemigroups__konieczny__nonregulardclass
-   _generated/libsemigroups__konieczny__regulardclass

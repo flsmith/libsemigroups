@@ -438,7 +438,7 @@ namespace libsemigroups {
   template <typename T>
   struct LambdaValue<PartialPerm<T>> {
     static constexpr size_t N = BitSet<1>::max_size();
-    //! For PartialPerms, \type is BitSet<N>, representing the image of the
+    //! For PartialPerms, \c type is BitSet<N>, representing the image of the
     //! PartialPerms.
     using type                = BitSet<N>;
   };
@@ -450,7 +450,7 @@ namespace libsemigroups {
   //! \sa RhoValue.
   template <typename T>
   struct RhoValue<PartialPerm<T>> {
-    //! For PartialPerms, \type is BitSet<N>, representing the domain of the
+    //! For PartialPerms, \c type is BitSet<N>, representing the domain of the
     //! PartialPerms.
     using type = typename LambdaValue<PartialPerm<T>>::type;
   };
@@ -594,7 +594,7 @@ namespace libsemigroups {
   //! \sa LambdaValue.
   template <typename T>
   struct LambdaValue<Transformation<T>> {
-    //! For Transformations, \type is the largest BitSet available, representing
+    //! For Transformations, \c type is the largest BitSet available, representing
     //! the image set of the Transformations.
     static constexpr size_t N = BitSet<1>::max_size();
     using type                = BitSet<N>;
@@ -607,7 +607,7 @@ namespace libsemigroups {
   //! \sa RhoValue.
   template <typename T>
   struct RhoValue<Transformation<T>> {
-    //! For Transformation<T>s, \type is std::vector<T>, representing the kernel
+    //! For Transformation<T>s, \c type is std::vector<T>, representing the kernel
     //! of the Transformations.
     using type = std::vector<T>;
   };

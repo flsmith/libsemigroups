@@ -20,6 +20,11 @@ libsemigroups::Konieczny:
   - [typedef, Swap]
 - Constructors:
   - Konieczny
+  - Konieczny(Konieczny const&)
+  - operator=(Konieczny const&)
+  - Konieczny(Konieczny&&)
+  - operator=(Konieczny&&)
+  - Konieczny(std::vector<element_type> const&)
 - Initialisation:
   - add_generator
   - add_generators(T const&)

@@ -549,7 +549,7 @@ namespace libsemigroups {
   //! \sa ImageRightAction.
   template <>
   struct Lambda<HPCombi::Transf16, HPCombi::PTransf16> {
-    //! Stores the identity function on the image of \x in \p res.
+    //! Stores the identity function on the image of \p x in \p res.
     //! \exceptions
     //! \noexcept
     void operator()(HPCombi::PTransf16&      res,
@@ -565,7 +565,7 @@ namespace libsemigroups {
   //! \sa ImageLeftAction.
   template <>
   struct Rho<HPCombi::Transf16, HPCombi::Vect16> {
-    //! Stores the kernel of \x in \p res.
+    //! Stores the kernel of \p x in \p res.
     //! \exceptions
     //! \noexcept
     void operator()(HPCombi::Vect16&         res,
