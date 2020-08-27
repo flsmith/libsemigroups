@@ -75,7 +75,7 @@ namespace libsemigroups {
 
       void release(T&) {}
 
-      void push(T const&, size_t = 1) {}
+      void init(T const&) {}
     };
 
     template <typename T>
@@ -83,11 +83,9 @@ namespace libsemigroups {
      public:
       // Not noexcept because default constructors of, say, std::list isn't
       Pool() = default;
+
       ~Pool() {
-        while (!_acquirable.empty()) {
-          delete _acquirable.top();
-          _acquirable.pop();
-        }
+        shrink_to_fit();
         while (!_acquired.empty()) {
           delete _acquired.back();
           _acquired.pop_back();
@@ -103,8 +101,12 @@ namespace libsemigroups {
       // Not noexcept because it can throw
       T acquire() {
         if (_acquirable.empty()) {
-          LIBSEMIGROUPS_EXCEPTION(
-              "attempted to acquire an object, but none are acquirable");
+          if (_acquired.empty()) {
+            LIBSEMIGROUPS_EXCEPTION(
+                "the pool has not been initialised, cannot acquire!");
+          }
+          // double size
+          push(_acquired.back(), _acquired.size());
         }
         T ptr = _acquirable.top();
         _acquirable.pop();
@@ -125,14 +127,25 @@ namespace libsemigroups {
         _acquirable.push(ptr);
       }
 
+      void init(T const sample) {
+        push(sample);
+      }
+
+      void shrink_to_fit() {
+        while (!_acquirable.empty()) {
+          delete _acquirable.top();
+          _acquirable.pop();
+        }
+      }
+
+     private:
       // Not noexcept
-      void push(T x, size_t number = 1) {
+      void push(T const x, size_t number = 1) {
         for (size_t i = 0; i < number; ++i) {
           _acquirable.push(new (typename std::remove_pointer<T>::type)(*x));
         }
       }
 
-     private:
       std::stack<T>                                          _acquirable;
       std::list<T>                                           _acquired;
       std::unordered_map<T, typename std::list<T>::iterator> _map;
@@ -151,7 +164,7 @@ namespace libsemigroups {
       ~PoolGuard() = default;
 
       // Deleted other constructors to avoid unintentional copying
-      PoolGuard()                  = delete;
+      PoolGuard()                 = delete;
       PoolGuard(PoolGuard const&) = delete;
       PoolGuard(PoolGuard&&)      = delete;
       PoolGuard& operator=(PoolGuard const&) = delete;
@@ -161,6 +174,8 @@ namespace libsemigroups {
       T get() const noexcept {
         return T();
       }
+      void swap(T) noexcept {}
+      void shrink_to_fit() {}
     };
 
     // A pool guard acquires an element from the pool on construction and
@@ -168,15 +183,14 @@ namespace libsemigroups {
     template <typename T>
     class PoolGuard<T, is_pointer_t<T>> final {
      public:
-      explicit PoolGuard(Pool<T>& pool)
-          : _pool(pool), _tmp(pool.acquire()) {}
+      explicit PoolGuard(Pool<T>& pool) : _pool(pool), _tmp(pool.acquire()) {}
 
       ~PoolGuard() {
         _pool.release(_tmp);
       }
 
       // Deleted other constructors to avoid unintentional copying
-      PoolGuard()                  = delete;
+      PoolGuard()                 = delete;
       PoolGuard(PoolGuard const&) = delete;
       PoolGuard(PoolGuard&&)      = delete;
       PoolGuard& operator=(PoolGuard const&) = delete;
@@ -187,9 +201,13 @@ namespace libsemigroups {
         return _tmp;
       }
 
+      void swap(T other) noexcept {
+        std::swap(_tmp, other);
+      }
+
      private:
       Pool<T>& _pool;
-      T         _tmp;
+      T        _tmp;
     };
 
   }  // namespace detail

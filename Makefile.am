@@ -616,8 +616,10 @@ EXTRA_PROGRAMS += test_hpcombi
 EXTRA_PROGRAMS += test_iterator
 EXTRA_PROGRAMS += test_kbe
 EXTRA_PROGRAMS += test_knuth_bendix
+EXTRA_PROGRAMS += test_konieczny
 EXTRA_PROGRAMS += test_obvinf
 EXTRA_PROGRAMS += test_order
+EXTRA_PROGRAMS += test_pool
 EXTRA_PROGRAMS += test_race
 EXTRA_PROGRAMS += test_runner
 EXTRA_PROGRAMS += test_schreier_sims
@@ -733,9 +735,6 @@ test_constants_SOURCES += tests/test-main.cpp
 test_containers_SOURCES =  tests/test-containers.cpp
 test_containers_SOURCES += tests/test-main.cpp
 
-test_cache_SOURCES =  tests/test-cache.cpp
-test_cache_SOURCES += tests/test-main.cpp
-
 test_digraph_helper_SOURCES  = tests/test-digraph-helper.cpp
 test_digraph_helper_SOURCES += tests/test-main.cpp
 
@@ -821,6 +820,9 @@ test_obvinf_SOURCES += tests/test-main.cpp
 
 test_order_SOURCES =  tests/test-order.cpp
 test_order_SOURCES += tests/test-main.cpp
+
+test_pool_SOURCES =  tests/test-pool.cpp
+test_pool_SOURCES += tests/test-main.cpp
 
 test_race_SOURCES =  tests/test-race.cpp
 test_race_SOURCES += tests/test-main.cpp

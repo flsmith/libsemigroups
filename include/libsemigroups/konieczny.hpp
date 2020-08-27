@@ -1220,7 +1220,7 @@ namespace libsemigroups {
       _one = this->to_internal(One()(x));
       _gens.push_back(_one);  // TODO(later): maybe not this
 
-      _element_pool.push(_one, 6);
+      _element_pool.init(_one);
 
       _rank_state = new rank_state_type(cbegin_generators(), cend_generators());
       LIBSEMIGROUPS_ASSERT((_rank_state == nullptr)
