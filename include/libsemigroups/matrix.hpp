@@ -19,24 +19,30 @@
 #ifndef LIBSEMIGROUPS_MATRIX_HPP_
 #define LIBSEMIGROUPS_MATRIX_HPP_
 
-#include <algorithm> // for min
+#include <algorithm>  // for min
 
-#include "libsemigroups-debug.hpp"
 #include "constants.hpp"
+#include "libsemigroups-debug.hpp"
+#include "order.hpp"
 #include "string.hpp"
 
 namespace libsemigroups {
 
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
+  template <typename PlusOp,
+            typename ProdOp,
+            typename ZeroOp,
+            typename OneOp,
             size_t N,
             typename Container>
   class Matrix {
-    // TODO: rows_type alias
    public:
-    using entry_type = typename Container::value_type;
+    using scalar_type    = typename Container::value_type;
+    using container_type = Container;
+
+    using Plus = PlusOp;
+    using Prod = ProdOp;
+    using Zero = ZeroOp;
+    using One  = OneOp;
 
     Matrix() = default;
 
@@ -44,7 +50,7 @@ namespace libsemigroups {
       LIBSEMIGROUPS_ASSERT(_container.size() == N * N);
     }
 
-    explicit Matrix(std::initializer_list<std::initializer_list<entry_type>> C)
+    explicit Matrix(std::initializer_list<std::initializer_list<scalar_type>> C)
         : Matrix() {
       // TODO checks
       for (size_t r = 0; r < N; ++r) {
@@ -53,6 +59,7 @@ namespace libsemigroups {
         }
       }
     }
+    // TODO the other constructors
 
     bool operator==(Matrix const& other) const {
       return _container == other._container;
@@ -62,7 +69,7 @@ namespace libsemigroups {
       return _container != other._container;
     }
 
-    void operator()(size_t r, size_t c, entry_type val) {
+    void operator()(size_t r, size_t c, scalar_type val) {
       _container[r * N + c] = val;
     }
 
@@ -91,7 +98,7 @@ namespace libsemigroups {
 
     void product_inplace(Matrix const& A, Matrix const& B) {
       // get a pointer array for the entire column in B matrix
-      static std::array<entry_type, N> colPtr;
+      static std::array<scalar_type, N> colPtr;
       // loop over output columns first, because column element addresses are
       // not continuous
       for (size_t c = 0; c < N; c++) {
@@ -103,23 +110,10 @@ namespace libsemigroups {
               = std::inner_product(A._container.begin() + r * N,
                                    A._container.begin() + (r + 1) * N,
                                    colPtr.cbegin(),
-                                   Zero()(),
+                                   ZeroOp()(),
                                    Plus(),
                                    Prod());
         }
-        /*_container[(N - 1) * N + c]
-            = std::inner_product(A._container.begin() + (N - 1) * N,
-                                 A._container.end(),
-                                 colPtr.begin(),
-                                 Zero()(),
-                                 Plus(),
-                                 Prod());*/
-        // move column pointer array to the next column
-        /*std::transform(
-            colPtr.begin(),
-            colPtr.end(),
-            colPtr.begin(),
-            [](typename Container::const_iterator it) { return ++it; });*/
       }
     }
 
@@ -129,42 +123,35 @@ namespace libsemigroups {
       return xy;
     }
 
-    std::vector<std::array<entry_type, N>> rows() const {
-      std::vector<std::array<entry_type, N>> out(N);
-      for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-          out[i][j] = _container[i * N + j];
-        }
-      }
-      return out;
-    }
-    
+    // REMOVE
     size_t degree() const {
       return N;
     }
 
     static Matrix identity() {
       Container x;
-      x.fill(Zero()());
+      x.fill(ZeroOp()());
       for (size_t i = 0; i < N; ++i) {
-        x[i * N + i] = One()();
+        x[i * N + i] = OneOp()();
       }
       return Matrix(std::move(x));
     }
 
     // TODO this should perhaps take the semiring into account
+    // REMOVE
     size_t complexity() const {
       return N * N * N;
     }
 
     // TODO cache and shouldn't be std::hash
+    // REMOVE
     size_t hash_value() const {
       return std::hash<Container>()(_container);
     }
 
     Matrix transpose() const {
       Container x;
-      x.fill(Zero()());
+      x.fill(ZeroOp()());
       for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
           x[i * N + j] = _container[j * N + i];
@@ -173,13 +160,14 @@ namespace libsemigroups {
       return Matrix(std::move(x));
     }
 
+    // Acts on the rows by this, and stores the result in res.
     void
-    right_product(std::vector<std::array<entry_type, N>>&       res,
-                  std::vector<std::array<entry_type, N>> const& rows) const {
+    right_product(std::vector<std::array<scalar_type, N>>&       res,
+                  std::vector<std::array<scalar_type, N>> const& rows) const {
       // TODO assertions
       // TODO duplication
       res.resize(rows.size());
-      static std::array<entry_type, N> colPtr;
+      static std::array<scalar_type, N> colPtr;
       for (size_t c = 0; c < N; c++) {
         for (size_t i = 0; i < N; ++i) {
           colPtr[i] = _container[i * N + c];
@@ -188,16 +176,227 @@ namespace libsemigroups {
           res[r][c] = std::inner_product(rows[r].begin(),
                                          rows[r].begin() + N,
                                          colPtr.cbegin(),
-                                         Zero()(),
+                                         ZeroOp()(),
                                          Plus(),
                                          Prod());
         }
       }
     }
+
+    class Row;
+
+    class Rows {
+     public:
+      using const_iterator = typename Container::const_iterator;
+      using iterator       = typename Container::iterator;
+      Rows() : Rows(new Container(), true) {}
+      explicit Rows(Matrix const& m) : Rows(&m._container, false) {}
+
+      ~Rows() {
+        if (_owns_data) {
+          delete _data;
+        }
+      }
+
+      Row const& operator[](size_t i) const {
+        return _rows[i];
+      }
+
+      const_iterator cbegin() const {
+        return _rows.cbegin();
+      }
+
+      const_iterator cend() const {
+        return _rows.cend();
+      }
+
+      void push_back(const_iterator first) {
+        LIBSEMIGROUPS_ASSERT(size() < N);
+        acquire_data();
+        for (size_t i = 0; i < N; ++i) {
+          (*_data)[N * size() + i] = first[i];
+        }
+        renew_iterators();  // TODO move this into acquire_data
+        _rows.emplace_back(end_data());
+      }
+
+      void pop_back() {
+        _rows.pop_back();
+      }
+
+      void push_back(Row const& r) {
+        push_back(r.cbegin());
+      }
+
+      void resize(size_t M) {
+        LIBSEMIGROUPS_ASSERT(M <= N);
+        if (M > size()) {
+          auto first = _data->begin() + size() * N;
+          auto last  = first + (M - size()) * N;
+          for (auto it = first; it < last; it += N) {
+            _rows.emplace_back(it);
+          }
+        }
+      }
+
+      void clear() {
+        _rows.clear();
+      }
+
+      Row const& back() const {
+        return _rows.back();
+      }
+
+      Row& back() {
+        return _rows.back();
+      }
+
+      // Eg sort(LexicographicCompare());
+      template <typename F>
+      void sort(F&& func) {
+        std::sort(_rows.begin(), _rows.end(), [&func](Row& r1, Row& r2) {
+          return func(r1.cbegin(), r1.cend(), r2.cbegin(), r2.cend());
+        });
+      }
+
+      size_t size() const noexcept {
+        return _rows.size();
+      }
+
+     private:
+      explicit Rows(Container const* C, bool owns)
+          : _data(const_cast<Container*>(C)), _owns_data(owns), _rows() {
+        if (!_owns_data) {
+          for (auto it = _data->begin(); it < _data->end(); it += N) {
+            _rows.emplace_back(it);
+          }
+        }
+      }
+
+      iterator end_data() {
+        return _data->begin() + size() * N;
+      }
+
+      void acquire_data() {
+        if (!_owns_data) {
+          _data      = new Container(*_data);
+          _owns_data = true;
+        }
+      }
+
+      void renew_iterators() {
+        LIBSEMIGROUPS_ASSERT(_owns_data);
+        auto it = _data->begin();
+        for (size_t i = 0; i < _rows.size(); ++i) {
+          _rows[i].renew_iterator(it);
+          it += N;
+        }
+      }
+
+      // _data has fixed size N * N,
+      Container*                    _data;
+      bool                          _owns_data;
+      detail::StaticVector1<Row, N> _rows;
+    };
+
+    class Row {
+      friend class Rows;
+
+     public:
+      using const_iterator = typename Container::const_iterator;
+      using iterator       = typename Container::iterator;
+
+      Row() = default;  // caution
+      explicit Row(iterator first) : _begin(first) {}
+
+      Row(Row const&) = default;
+      Row(Row&&)      = default;
+      Row& operator=(Row const&) = default;
+      Row& operator=(Row&&) = default;
+
+      scalar_type const& operator[](size_t i) const {
+        return _begin[i];
+      }
+
+      scalar_type& operator[](size_t i) {
+        return _begin[i];
+      }
+
+      const_iterator cbegin() const {
+        return _begin;
+      }
+
+      const_iterator cend() const {
+        return _begin + N;
+      }
+
+      const_iterator begin() const {
+        return _begin;
+      }
+
+      const_iterator end() const {
+        return _begin + N;
+      }
+
+      iterator begin() {
+        return _begin;
+      }
+
+      iterator end() {
+        return _begin + N;
+      }
+
+      void operator+=(Row const& x) {
+        auto& this_ = *this;
+        for (size_t i = 0; i < N; ++i) {
+          this_[i] = Plus()(this_[i], x[i]);
+        }
+      }
+
+      void operator+=(scalar_type a) {
+        auto& this_ = *this;
+        for (auto& x : *this) {
+          x = Plus()(x, a);
+        }
+      }
+
+      void operator*=(scalar_type a) {
+        auto& this_ = *this;
+        for (size_t i = 0; i < N; ++i) {
+          this_[i] = Prod()(this_[i], a);
+        }
+      }
+
+      bool operator==(Row const& that) const {
+        return std::equal(_begin, _begin + N, that._begin);
+      }
+
+      bool operator!=(Row const& that) const {
+        return !(*this == that);
+      }
+
+      bool operator<(Row const& that) const {
+        return std::lexicographical_compare(
+            cbegin(), cend(), that.cbegin(), that.cend());
+      }
+
+     private:
+      void renew_iterator(iterator first) {
+        _begin = first;
+      }
+
+      iterator _begin;
+    };
+
+    static_assert(std::is_trivial<Row>(), "Row is not a trivial class!");
+
+    Rows rows() const {
+      return Rows(*this);
+    }
+
    private:
     Container _container;
   };  // namespace libsemigroups
-
 
   struct BooleanPlus {
     bool operator()(bool const x, bool const y) const {
@@ -300,11 +499,11 @@ namespace libsemigroups {
 
   template <size_t dim, size_t thresh>
   using TropicalMaxPlusMat = Matrix<MaxPlusPlus,
-                      MaxPlusProd<thresh>,
-                      MaxPlusZero,
-                      MaxPlusOne,
-                      dim,
-                      std::array<int64_t, dim * dim>>;
+                                    MaxPlusProd<thresh>,
+                                    MaxPlusZero,
+                                    MaxPlusOne,
+                                    dim,
+                                    std::array<int64_t, dim * dim>>;
 
   namespace matrix_helpers {
     template <typename Plus, typename Container>
@@ -328,13 +527,66 @@ namespace libsemigroups {
     };
 
     template <typename Prod, typename Container>
-    Container scalar_row_product(Container row, typename Container::value_type scalar) {
-      //TODO static assert
+    Container scalar_row_product(Container                      row,
+                                 typename Container::value_type scalar) {
+      // TODO static assert
       Container out(row);
       for (size_t i = 0; i < out.size(); ++i) {
         out[i] = Prod()(out[i], scalar);
       }
       return out;
+    }
+
+    template <size_t dim, size_t thresh>
+    typename TropicalMaxPlusMat<dim, thresh>::Rows
+    row_basis(TropicalMaxPlusMat<dim, thresh> const& x) {
+      using matrix_type = TropicalMaxPlusMat<dim, thresh>;
+      using scalar_type = typename matrix_type::scalar_type;
+      using Rows        = typename matrix_type::Rows;
+      using Zero        = typename matrix_type::Zero;
+      using Plus        = typename matrix_type::Plus;
+
+      Rows result;
+      auto rows = x.rows();
+      rows.sort(LexicographicalCompare<typename matrix_type::container_type>());
+      for (size_t r1 = 0; r1 < rows.size(); ++r1) {
+        if (r1 == 0 || rows[r1] != rows[r1 - 1]) {
+          result.resize(result.size() + 1);
+          std::fill(result.back().begin(), result.back().end(), Zero()());
+          for (size_t r2 = 0; r2 < r1; ++r2) {
+            scalar_type max_scalar = thresh;
+            for (size_t c = 0; c < dim; ++c) {
+              if (rows[r2][c] == Zero()()) {
+                continue;
+              }
+              if (rows[r1][c] >= rows[r2][c]) {
+                if (rows[r1][c] != thresh) {
+                  max_scalar = Plus()(max_scalar, rows[r1][c] - rows[r2][c]);
+                }
+              } else {
+                max_scalar = Zero()();
+                break;
+              }
+            }
+            if (max_scalar != Zero()()) {
+              result.back() += rows[r2];
+              // multiply every entry by max_scalar
+              result.back() *= max_scalar;
+            }
+          }
+          if (result.back() != rows[r1]) {
+            result.pop_back();
+            // REWORK this so that we don't actually copy rows[r1]
+            result.push_back(rows[r1]);
+            if (result.size() == dim) {
+              break;
+            }
+          } else {
+            result.pop_back();
+          }
+        }
+      }
+      return result;
     }
 
     template <size_t dim, size_t thresh>
@@ -381,7 +633,7 @@ namespace libsemigroups {
       }
       std::swap(buf, rows);
     }
-  }
+  }  // namespace matrix_helpers
 
 }  // namespace libsemigroups
 

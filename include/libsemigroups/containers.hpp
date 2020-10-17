@@ -669,8 +669,19 @@ namespace libsemigroups {
         _size++;
       }
 
+      template <typename S>
+      void emplace_back(S&& x) {
+        LIBSEMIGROUPS_ASSERT(_size < N);
+        _array[_size] = T(std::forward<S>(x));
+        _size++;
+      }
+
       size_t size() const noexcept {
         return _size;
+      }
+
+      void pop_back() {
+        _size--;
       }
 
       // Not noexcept because std::array::operator[] isn't
