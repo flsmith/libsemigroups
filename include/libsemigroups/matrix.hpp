@@ -129,6 +129,12 @@ namespace libsemigroups {
       }
     }
 
+    Row operator*(scalar_type a) const {
+      Row result(*this);
+      result *= a;
+      return result;
+    }
+
     template <typename T,
               typename
               = typename std::enable_if<std::is_same<T, RowView>::value
@@ -631,7 +637,6 @@ namespace libsemigroups {
       using RowView     = typename matrix_type::RowView;
       using Row         = typename matrix_type::Row;
       using Zero        = typename matrix_type::Zero;
-      using Plus        = typename matrix_type::Plus;
 
       auto views = rows(x);
       std::sort(views.begin(),
@@ -641,7 +646,6 @@ namespace libsemigroups {
                       rv1.begin(), rv1.end(), rv2.begin(), rv2.end());
                 });
       Row tmp1;
-      Row tmp2;
 
       for (size_t r1 = 0; r1 < views.size(); ++r1) {
         if (r1 == 0 || views[r1] != views[r1 - 1]) {
@@ -663,10 +667,7 @@ namespace libsemigroups {
               }
             }
             if (max_scalar != Zero()()) {
-              tmp2 = views[r2];
-              tmp2 *= max_scalar;
-              // multiply every entry by max_scalar
-              tmp1 += tmp2;
+              tmp1 += views[r2] * max_scalar;
             }
           }
           if (tmp1 != views[r1]) {
