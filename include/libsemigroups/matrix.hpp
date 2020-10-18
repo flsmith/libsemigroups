@@ -27,39 +27,216 @@
 #include "string.hpp"
 
 namespace libsemigroups {
+  // Forward decl
+  template <typename PlusOp,
+            typename ProdOp,
+            typename ZeroOp,
+            typename OneOp,
+            size_t R,
+            size_t C,
+            typename Container>
+  class Matrix;
 
+  // Forward decl
   template <typename PlusOp,
             typename ProdOp,
             typename ZeroOp,
             typename OneOp,
             size_t N,
             typename Container>
+  using Row = Matrix<PlusOp, ProdOp, ZeroOp, OneOp, 1, N, Container>;
+
+  // Class for cheaply storing iterators to rows
+  template <typename PlusOp,
+            typename ProdOp,
+            typename ZeroOp,
+            typename OneOp,
+            size_t N,
+            typename Container>
+  class RowView {
+   public:
+    using const_iterator = typename Container::const_iterator;
+    using iterator       = typename Container::iterator;
+    using scalar_type    = typename Container::value_type;
+
+    using Row = Row<PlusOp, ProdOp, ZeroOp, OneOp, N, Container>;
+
+    RowView() = default;
+    explicit RowView(iterator first) : _begin(first) {}
+    explicit RowView(Row const& r) : _begin(const_cast<Row&>(r).begin()) {}
+
+    RowView(RowView const&) = default;
+    RowView(RowView&&)      = default;
+    RowView& operator=(RowView const&) = default;
+    RowView& operator=(RowView&&) = default;
+
+    scalar_type const& operator[](size_t i) const {
+      return _begin[i];
+    }
+
+    scalar_type& operator[](size_t i) {
+      return _begin[i];
+    }
+
+    scalar_type const& operator()(size_t i) const {
+      return (*this)[i];
+    }
+
+    scalar_type& operator()(size_t i) {
+      return (*this)[i];
+    }
+
+    const_iterator cbegin() const {
+      return _begin;
+    }
+
+    const_iterator cend() const {
+      return _begin + N;
+    }
+
+    const_iterator begin() const {
+      return _begin;
+    }
+
+    const_iterator end() const {
+      return _begin + N;
+    }
+
+    iterator begin() {
+      return _begin;
+    }
+
+    iterator end() {
+      return _begin + N;
+    }
+
+    void operator+=(RowView const& x) {
+      auto& this_ = *this;
+      for (size_t i = 0; i < N; ++i) {
+        this_[i] = PlusOp()(this_[i], x[i]);
+      }
+    }
+
+    void operator+=(scalar_type const a) {
+      for (auto& x : *this) {
+        x = PlusOp()(x, a);
+      }
+    }
+
+    void operator*=(scalar_type const a) {
+      for (auto& x : *this) {
+        x = ProdOp()(x, a);
+      }
+    }
+
+    template <typename T,
+              typename
+              = typename std::enable_if<std::is_same<T, RowView>::value
+                                        || std::is_same<T, Row>::value>::type>
+    bool operator==(T const& that) const {
+      return std::equal(begin(), end(), that.begin());
+    }
+
+    template <typename T,
+              typename
+              = typename std::enable_if<std::is_same<T, RowView>::value
+                                        || std::is_same<T, Row>::value>::type>
+    bool operator!=(T const& that) const {
+      return !(*this == that);
+    }
+
+    template <typename T,
+              typename
+              = typename std::enable_if<std::is_same<T, RowView>::value
+                                        || std::is_same<T, Row>::value>::type>
+    bool operator<(T const& that) const {
+      return std::lexicographical_compare(
+          cbegin(), cend(), that.cbegin(), that.cend());
+    }
+
+   private:
+    iterator _begin;
+  };
+
+  template <typename PlusOp,
+            typename ProdOp,
+            typename ZeroOp,
+            typename OneOp,
+            size_t R,
+            size_t C,
+            typename Container>
   class Matrix {
    public:
     using scalar_type    = typename Container::value_type;
     using container_type = Container;
+    using iterator       = typename Container::iterator;
+    using const_iterator = typename Container::const_iterator;
 
     using Plus = PlusOp;
     using Prod = ProdOp;
     using Zero = ZeroOp;
     using One  = OneOp;
+    // FIXME Container in the next two lines has the wrong size if it's an
+    // array, because Container = std::array<scalar_type, R * C> and it should
+    // be std::array<scalar_type, C> in the following two aliases.
+    using Row     = Row<PlusOp, ProdOp, ZeroOp, OneOp, C, Container>;
+    using RowView = RowView<PlusOp, ProdOp, ZeroOp, OneOp, C, Container>;
+
+    static_assert(std::is_trivial<RowView>(),
+                  "RowView is not a trivial class!");
+
+    ////////////////////////////////////////////////////////////////////////
+    // Constructors + destructor
+    ////////////////////////////////////////////////////////////////////////
 
     Matrix() = default;
 
-    explicit Matrix(Container&& c) : _container(std::move(c)) {
-      LIBSEMIGROUPS_ASSERT(_container.size() == N * N);
+    explicit Matrix(RowView const& rv) : _container() {
+      std::copy(rv.cbegin(), rv.cend(), begin());
+      static_assert(
+          R == 1, "Cannot construct matrix with more than 1 row from RowView");
     }
 
-    explicit Matrix(std::initializer_list<std::initializer_list<scalar_type>> C)
+    explicit Matrix(Container&& c) : _container(std::move(c)) {
+      LIBSEMIGROUPS_ASSERT(_container.size() == R * C);
+    }
+
+    explicit Matrix(Container const& c) : _container(c) {
+      LIBSEMIGROUPS_ASSERT(_container.size() == R * C);
+    }
+
+    explicit Matrix(std::initializer_list<std::initializer_list<scalar_type>> m)
         : Matrix() {
-      // TODO checks
-      for (size_t r = 0; r < N; ++r) {
-        for (size_t c = 0; c < N; ++c) {
-          _container[r * N + c] = *((C.begin() + r)->begin() + c);
+      LIBSEMIGROUPS_ASSERT(m.size() == R);
+      LIBSEMIGROUPS_ASSERT(std::for_each(
+          m.begin(), m.end(), [](std::initializer_list<scalar_type> const& r) {
+            return r.size() == C;
+          }));
+      for (size_t r = 0; r < R; ++r) {
+        auto row = m.begin() + r;
+        for (size_t c = 0; c < C; ++c) {
+          _container[r * C + c] = *(row->begin() + c);
         }
       }
     }
-    // TODO the other constructors
+
+    Matrix(Matrix const&) = default;
+    Matrix(Matrix&&)      = default;
+    Matrix& operator=(Matrix const&) = default;
+    Matrix& operator=(Matrix&&) = default;
+
+    Matrix& operator=(RowView const& rv) {
+      static_assert(
+          R == 1, "Cannot construct matrix with more than 1 row from RowView");
+      std::copy(rv.cbegin(), rv.cend(), begin());
+      return *this;
+    }
+
+    ~Matrix() = default;
+
+    ////////////////////////////////////////////////////////////////////////
+    // Comparison operators
+    ////////////////////////////////////////////////////////////////////////
 
     bool operator==(Matrix const& other) const {
       return _container == other._container;
@@ -69,18 +246,216 @@ namespace libsemigroups {
       return _container != other._container;
     }
 
-    void operator()(size_t r, size_t c, scalar_type val) {
-      _container[r * N + c] = val;
-    }
-
-    typename Container::const_iterator operator[](size_t r) {
-      return _container.cbegin() + (r * N);
-    }
-
-    //! Returns \c true if \c this is less than \p that.
     bool operator<(Matrix const& that) const {
       return this->_container < that._container;
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Comparison with RowView operators
+    ////////////////////////////////////////////////////////////////////////
+
+    bool operator==(RowView const& other) const {
+      static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
+      return static_cast<RowView>(*this) == other;
+    }
+
+    bool operator!=(RowView const& other) const {
+      static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
+      return static_cast<RowView>(*this) != other;
+    }
+
+    bool operator<(RowView const& other) const {
+      static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
+      return static_cast<RowView>(*this) < other;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Attributes
+    ////////////////////////////////////////////////////////////////////////
+
+    scalar_type& operator()(size_t r, size_t c) {
+      return _container[r * C + c];
+    }
+
+    scalar_type const& operator()(size_t r, size_t c) const {
+      return _container[r * C + c];
+    }
+
+    static constexpr size_t number_of_rows() noexcept {
+      return R;
+    }
+
+    static constexpr size_t number_of_cols() noexcept {
+      return C;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Arithmetic operators - in-place
+    ////////////////////////////////////////////////////////////////////////
+
+    void product_inplace(Matrix const& A, Matrix const& B) {
+      // get a pointer array for the entire column in B matrix
+      static std::array<scalar_type, C> colPtr;
+      // loop over output columns first, because column element addresses are
+      // not continuous
+      for (size_t c = 0; c < C; c++) {
+        for (size_t i = 0; i < R; ++i) {
+          colPtr[i] = B._container[i * C + c];
+        }
+        for (size_t r = 0; r < R; r++) {
+          _container[r * C + c]
+              = std::inner_product(A._container.begin() + r * C,
+                                   A._container.begin() + (r + 1) * C,
+                                   colPtr.cbegin(),
+                                   Zero()(),
+                                   Plus(),
+                                   Prod());
+        }
+      }
+    }
+
+    void transpose() {
+      static_assert(C == R, "cannot transpose non-square matrix");
+      auto& x = *this;
+      for (size_t r = 0; r < R; ++r) {
+        for (size_t c = r + 1; c < C; ++c) {
+          std::swap(x(r, c), x(c, r));
+        }
+      }
+    }
+
+    void operator+=(Matrix const& that) {
+      auto& this_ = *this;
+      for (size_t r = 0; r < R; ++r) {
+        for (size_t c = 0; c < C; ++c) {
+          this_(r, c) = Plus()(this_(r, c), that(r, c));
+        }
+      }
+    }
+
+    void operator*=(scalar_type const a) {
+      for (auto& x : *this) {
+        x = ProdOp()(x, a);
+      }
+    }
+
+    void operator+=(RowView const& that) {
+      static_assert(R == 1,
+                    "cannot add RowView to matrix with more than one row");
+      RowView(*this) += that;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Arithmetic operators - not in-place
+    ////////////////////////////////////////////////////////////////////////
+
+    Matrix operator+(Matrix const& y) const {
+      Matrix result(*this);
+      result += y;
+      return result;
+    }
+
+    Matrix operator*(Matrix const& y) const {
+      Matrix xy;
+      xy.product_inplace(*this, y);
+      return xy;
+    }
+
+    static Matrix identity() {
+      static_assert(C == R, "cannot create non-square identity matrix");
+      Matrix x;
+      x.fill(ZeroOp()());
+      for (size_t r = 0; r < R; ++r) {
+        x(r, r) = OneOp()();
+      }
+      return x;
+    }
+
+    // Acts on the rows by this, and stores the result in res.
+    // TODO: replace
+    // void
+    // right_product(std::vector<std::array<scalar_type, N>>&       res,
+    //               std::vector<std::array<scalar_type, N>> const& rows) const
+    //               {
+    //   // TODO assertions
+    //   // TODO duplication
+    //   res.resize(rows.size());
+    //   static std::array<scalar_type, N> colPtr;
+    //   for (size_t c = 0; c < N; c++) {
+    //     for (size_t i = 0; i < N; ++i) {
+    //       colPtr[i] = _container[i * N + c];
+    //     }
+    //     for (size_t r = 0; r < rows.size(); r++) {
+    //       res[r][c] = std::inner_product(rows[r].begin(),
+    //                                      rows[r].begin() + N,
+    //                                      colPtr.cbegin(),
+    //                                      ZeroOp()(),
+    //                                      Plus(),
+    //                                      Prod());
+    //     }
+    //   }
+    // }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Iterators
+    ////////////////////////////////////////////////////////////////////////
+
+    iterator begin() {
+      static_assert(R == 1, "this must be a row");
+      return _container.begin();
+    }
+
+    iterator end() {
+      static_assert(R == 1, "this must be a row");
+      return _container.end();
+    }
+
+    const_iterator begin() const {
+      static_assert(R == 1, "this must be a row");
+      return _container.begin();
+    }
+
+    const_iterator end() const {
+      static_assert(R == 1, "this must be a row");
+      return _container.end();
+    }
+
+    const_iterator cbegin() const {
+      static_assert(R == 1, "this must be a row");
+      return _container.cbegin();
+    }
+
+    const_iterator cend() const {
+      static_assert(R == 1, "this must be a row");
+      return _container.cend();
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Rows
+    ////////////////////////////////////////////////////////////////////////
+
+    // TODO template for StaticVector1 too
+    void rows(std::vector<RowView>& x) const {
+      for (auto it = _container.begin(); it < _container.end(); it += C) {
+        x.emplace_back(it);
+      }
+    }
+
+    void rows(std::array<RowView, R>& x) const {
+      auto it = const_cast<typename Container::iterator>(_container.begin());
+      for (size_t r = 0; r < R; ++r) {
+        x[r] = RowView(it);
+        it += C;
+      }
+    }
+
+    void fill(scalar_type const& val) {
+      std::fill(_container.begin(), _container.end(), val);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Conversion operators - rows only
+    ////////////////////////////////////////////////////////////////////////
 
     //! Insertion operator
     // TODO formatting
@@ -94,304 +469,6 @@ namespace libsemigroups {
     friend std::ostream& operator<<(std::ostream& os, Matrix const& x) {
       os << detail::to_string(x);
       return os;
-    }
-
-    void product_inplace(Matrix const& A, Matrix const& B) {
-      // get a pointer array for the entire column in B matrix
-      static std::array<scalar_type, N> colPtr;
-      // loop over output columns first, because column element addresses are
-      // not continuous
-      for (size_t c = 0; c < N; c++) {
-        for (size_t i = 0; i < N; ++i) {
-          colPtr[i] = B._container[i * N + c];
-        }
-        for (size_t r = 0; r < N; r++) {
-          _container[r * N + c]
-              = std::inner_product(A._container.begin() + r * N,
-                                   A._container.begin() + (r + 1) * N,
-                                   colPtr.cbegin(),
-                                   ZeroOp()(),
-                                   Plus(),
-                                   Prod());
-        }
-      }
-    }
-
-    Matrix operator*(Matrix const& y) const {
-      Matrix xy;
-      xy.product_inplace(*this, y);
-      return xy;
-    }
-
-    // REMOVE
-    size_t degree() const {
-      return N;
-    }
-
-    static Matrix identity() {
-      Container x;
-      x.fill(ZeroOp()());
-      for (size_t i = 0; i < N; ++i) {
-        x[i * N + i] = OneOp()();
-      }
-      return Matrix(std::move(x));
-    }
-
-    // TODO this should perhaps take the semiring into account
-    // REMOVE
-    size_t complexity() const {
-      return N * N * N;
-    }
-
-    // TODO cache and shouldn't be std::hash
-    // REMOVE
-    size_t hash_value() const {
-      return std::hash<Container>()(_container);
-    }
-
-    Matrix transpose() const {
-      Container x;
-      x.fill(ZeroOp()());
-      for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-          x[i * N + j] = _container[j * N + i];
-        }
-      }
-      return Matrix(std::move(x));
-    }
-
-    // Acts on the rows by this, and stores the result in res.
-    void
-    right_product(std::vector<std::array<scalar_type, N>>&       res,
-                  std::vector<std::array<scalar_type, N>> const& rows) const {
-      // TODO assertions
-      // TODO duplication
-      res.resize(rows.size());
-      static std::array<scalar_type, N> colPtr;
-      for (size_t c = 0; c < N; c++) {
-        for (size_t i = 0; i < N; ++i) {
-          colPtr[i] = _container[i * N + c];
-        }
-        for (size_t r = 0; r < rows.size(); r++) {
-          res[r][c] = std::inner_product(rows[r].begin(),
-                                         rows[r].begin() + N,
-                                         colPtr.cbegin(),
-                                         ZeroOp()(),
-                                         Plus(),
-                                         Prod());
-        }
-      }
-    }
-
-    class Row;
-
-    class Rows {
-     public:
-      using const_iterator = typename Container::const_iterator;
-      using iterator       = typename Container::iterator;
-      Rows() : Rows(new Container(), true) {}
-      explicit Rows(Matrix const& m) : Rows(&m._container, false) {}
-
-      ~Rows() {
-        if (_owns_data) {
-          delete _data;
-        }
-      }
-
-      Row const& operator[](size_t i) const {
-        return _rows[i];
-      }
-
-      const_iterator cbegin() const {
-        return _rows.cbegin();
-      }
-
-      const_iterator cend() const {
-        return _rows.cend();
-      }
-
-      void push_back(const_iterator first) {
-        LIBSEMIGROUPS_ASSERT(size() < N);
-        acquire_data();
-        for (size_t i = 0; i < N; ++i) {
-          (*_data)[N * size() + i] = first[i];
-        }
-        renew_iterators();  // TODO move this into acquire_data
-        _rows.emplace_back(end_data());
-      }
-
-      void pop_back() {
-        _rows.pop_back();
-      }
-
-      void push_back(Row const& r) {
-        push_back(r.cbegin());
-      }
-
-      void resize(size_t M) {
-        LIBSEMIGROUPS_ASSERT(M <= N);
-        if (M > size()) {
-          auto first = _data->begin() + size() * N;
-          auto last  = first + (M - size()) * N;
-          for (auto it = first; it < last; it += N) {
-            _rows.emplace_back(it);
-          }
-        }
-      }
-
-      void clear() {
-        _rows.clear();
-      }
-
-      Row const& back() const {
-        return _rows.back();
-      }
-
-      Row& back() {
-        return _rows.back();
-      }
-
-      // Eg sort(LexicographicCompare());
-      template <typename F>
-      void sort(F&& func) {
-        std::sort(_rows.begin(), _rows.end(), [&func](Row& r1, Row& r2) {
-          return func(r1.cbegin(), r1.cend(), r2.cbegin(), r2.cend());
-        });
-      }
-
-      size_t size() const noexcept {
-        return _rows.size();
-      }
-
-     private:
-      explicit Rows(Container const* C, bool owns)
-          : _data(const_cast<Container*>(C)), _owns_data(owns), _rows() {
-        if (!_owns_data) {
-          for (auto it = _data->begin(); it < _data->end(); it += N) {
-            _rows.emplace_back(it);
-          }
-        }
-      }
-
-      iterator end_data() {
-        return _data->begin() + size() * N;
-      }
-
-      void acquire_data() {
-        if (!_owns_data) {
-          _data      = new Container(*_data);
-          _owns_data = true;
-        }
-      }
-
-      void renew_iterators() {
-        LIBSEMIGROUPS_ASSERT(_owns_data);
-        auto it = _data->begin();
-        for (size_t i = 0; i < _rows.size(); ++i) {
-          _rows[i].renew_iterator(it);
-          it += N;
-        }
-      }
-
-      // _data has fixed size N * N,
-      Container*                    _data;
-      bool                          _owns_data;
-      detail::StaticVector1<Row, N> _rows;
-    };
-
-    class Row {
-      friend class Rows;
-
-     public:
-      using const_iterator = typename Container::const_iterator;
-      using iterator       = typename Container::iterator;
-
-      Row() = default;  // caution
-      explicit Row(iterator first) : _begin(first) {}
-
-      Row(Row const&) = default;
-      Row(Row&&)      = default;
-      Row& operator=(Row const&) = default;
-      Row& operator=(Row&&) = default;
-
-      scalar_type const& operator[](size_t i) const {
-        return _begin[i];
-      }
-
-      scalar_type& operator[](size_t i) {
-        return _begin[i];
-      }
-
-      const_iterator cbegin() const {
-        return _begin;
-      }
-
-      const_iterator cend() const {
-        return _begin + N;
-      }
-
-      const_iterator begin() const {
-        return _begin;
-      }
-
-      const_iterator end() const {
-        return _begin + N;
-      }
-
-      iterator begin() {
-        return _begin;
-      }
-
-      iterator end() {
-        return _begin + N;
-      }
-
-      void operator+=(Row const& x) {
-        auto& this_ = *this;
-        for (size_t i = 0; i < N; ++i) {
-          this_[i] = Plus()(this_[i], x[i]);
-        }
-      }
-
-      void operator+=(scalar_type a) {
-        auto& this_ = *this;
-        for (auto& x : *this) {
-          x = Plus()(x, a);
-        }
-      }
-
-      void operator*=(scalar_type a) {
-        auto& this_ = *this;
-        for (size_t i = 0; i < N; ++i) {
-          this_[i] = Prod()(this_[i], a);
-        }
-      }
-
-      bool operator==(Row const& that) const {
-        return std::equal(_begin, _begin + N, that._begin);
-      }
-
-      bool operator!=(Row const& that) const {
-        return !(*this == that);
-      }
-
-      bool operator<(Row const& that) const {
-        return std::lexicographical_compare(
-            cbegin(), cend(), that.cbegin(), that.cend());
-      }
-
-     private:
-      void renew_iterator(iterator first) {
-        _begin = first;
-      }
-
-      iterator _begin;
-    };
-
-    static_assert(std::is_trivial<Row>(), "Row is not a trivial class!");
-
-    Rows rows() const {
-      return Rows(*this);
     }
 
    private:
@@ -428,6 +505,7 @@ namespace libsemigroups {
                       BooleanZero,
                       BooleanOne,
                       N,
+                      N,
                       std::array<bool, N * N>>;
 
   template <size_t N>
@@ -456,13 +534,14 @@ namespace libsemigroups {
     }
   };
 
-  template <size_t N, size_t M>
+  template <size_t R, size_t C, size_t M>
   using PMat = Matrix<PlusMod<M>,
                       ProdMod<M>,
                       IntegerZero,
                       IntegerOne,
-                      N,
-                      std::array<uint_fast8_t, N * N>>;
+                      R,
+                      C,
+                      std::array<uint_fast8_t, R * C>>;
 
   struct MaxPlusPlus {
     int64_t operator()(int64_t const x, int64_t const y) const {
@@ -475,13 +554,13 @@ namespace libsemigroups {
     }
   };
 
-  template <size_t N>
+  template <size_t T>
   struct MaxPlusProd {
     int64_t operator()(int64_t const x, int64_t const y) const {
       if (x == NEGATIVE_INFINITY || y == NEGATIVE_INFINITY) {
         return NEGATIVE_INFINITY;
       }
-      return std::min(x + y, static_cast<int64_t>(N));
+      return std::min(x + y, static_cast<int64_t>(T));
     }
   };
 
@@ -497,13 +576,14 @@ namespace libsemigroups {
     }
   };
 
-  template <size_t dim, size_t thresh>
+  template <size_t R, size_t C, size_t T>
   using TropicalMaxPlusMat = Matrix<MaxPlusPlus,
-                                    MaxPlusProd<thresh>,
+                                    MaxPlusProd<T>,
                                     MaxPlusZero,
                                     MaxPlusOne,
-                                    dim,
-                                    std::array<int64_t, dim * dim>>;
+                                    R,
+                                    C,
+                                    std::array<int64_t, R * C>>;
 
   namespace matrix_helpers {
     template <typename Plus, typename Container>
@@ -529,7 +609,6 @@ namespace libsemigroups {
     template <typename Prod, typename Container>
     Container scalar_row_product(Container                      row,
                                  typename Container::value_type scalar) {
-      // TODO static assert
       Container out(row);
       for (size_t i = 0; i < out.size(); ++i) {
         out[i] = Prod()(out[i], scalar);
@@ -537,31 +616,46 @@ namespace libsemigroups {
       return out;
     }
 
-    template <size_t dim, size_t thresh>
-    typename TropicalMaxPlusMat<dim, thresh>::Rows
-    row_basis(TropicalMaxPlusMat<dim, thresh> const& x) {
-      using matrix_type = TropicalMaxPlusMat<dim, thresh>;
+    template <typename T,
+              typename S = std::array<typename T::RowView, T::number_of_rows()>>
+    S rows(T const& x) {
+      S container;
+      x.rows(container);
+      return container;
+    }
+
+    template <size_t R, size_t C, size_t T, typename Container>
+    void row_basis(TropicalMaxPlusMat<R, C, T> const& x, Container& result) {
+      using matrix_type = TropicalMaxPlusMat<R, C, T>;
       using scalar_type = typename matrix_type::scalar_type;
-      using Rows        = typename matrix_type::Rows;
+      using RowView     = typename matrix_type::RowView;
+      using Row         = typename matrix_type::Row;
       using Zero        = typename matrix_type::Zero;
       using Plus        = typename matrix_type::Plus;
 
-      Rows result;
-      auto rows = x.rows();
-      rows.sort(LexicographicalCompare<typename matrix_type::container_type>());
-      for (size_t r1 = 0; r1 < rows.size(); ++r1) {
-        if (r1 == 0 || rows[r1] != rows[r1 - 1]) {
-          result.resize(result.size() + 1);
-          std::fill(result.back().begin(), result.back().end(), Zero()());
+      auto views = rows(x);
+      std::sort(views.begin(),
+                views.end(),
+                [](RowView const& rv1, RowView const& rv2) {
+                  return std::lexicographical_compare(
+                      rv1.begin(), rv1.end(), rv2.begin(), rv2.end());
+                });
+      Row tmp1;
+      Row tmp2;
+
+      for (size_t r1 = 0; r1 < views.size(); ++r1) {
+        if (r1 == 0 || views[r1] != views[r1 - 1]) {
+          std::fill(tmp1.begin(), tmp1.end(), Zero()());
           for (size_t r2 = 0; r2 < r1; ++r2) {
-            scalar_type max_scalar = thresh;
-            for (size_t c = 0; c < dim; ++c) {
-              if (rows[r2][c] == Zero()()) {
+            scalar_type max_scalar = T;
+            for (size_t c = 0; c < C; ++c) {
+              if (views[r2][c] == Zero()()) {
                 continue;
               }
-              if (rows[r1][c] >= rows[r2][c]) {
-                if (rows[r1][c] != thresh) {
-                  max_scalar = Plus()(max_scalar, rows[r1][c] - rows[r2][c]);
+              if (views[r1][c] >= views[r2][c]) {
+                if (views[r1][c] != T) {
+                  max_scalar
+                      = std::min(max_scalar, views[r1][c] - views[r2][c]);
                 }
               } else {
                 max_scalar = Zero()();
@@ -569,23 +663,28 @@ namespace libsemigroups {
               }
             }
             if (max_scalar != Zero()()) {
-              result.back() += rows[r2];
+              tmp2 = views[r2];
+              tmp2 *= max_scalar;
               // multiply every entry by max_scalar
-              result.back() *= max_scalar;
+              tmp1 += tmp2;
             }
           }
-          if (result.back() != rows[r1]) {
-            result.pop_back();
-            // REWORK this so that we don't actually copy rows[r1]
-            result.push_back(rows[r1]);
-            if (result.size() == dim) {
-              break;
-            }
-          } else {
-            result.pop_back();
+          if (tmp1 != views[r1]) {
+            result.push_back(views[r1]);
           }
         }
       }
+    }
+
+    template <size_t R,
+              size_t C,
+              size_t T,
+              typename Container = detail::StaticVector1<
+                  typename TropicalMaxPlusMat<R, C, T>::RowView,
+                  R>>
+    Container row_basis(TropicalMaxPlusMat<R, C, T> const& x) {
+      Container result;
+      row_basis(x, result);
       return result;
     }
 
