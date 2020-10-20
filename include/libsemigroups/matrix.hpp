@@ -310,30 +310,38 @@ namespace libsemigroups {
     ////////////////////////////////////////////////////////////////////////
 
     void product_inplace(Matrix const& A, Matrix const& B) {
-      // get a pointer array for the entire column in B matrix
-      static std::array<scalar_type, C> colPtr;
-      // loop over output columns first, because column element addresses are
-      // not continuous
+      static_assert(R == C, "can only multiply square matrices");
+      Matrix* BB = &const_cast<Matrix&>(B);
+      if (&A == &B) {
+        BB = new Matrix(B);
+      }
+      BB->transpose();
+
+      LIBSEMIGROUPS_ASSERT(&A != &BB);
+
       for (size_t c = 0; c < C; c++) {
-        for (size_t i = 0; i < R; ++i) {
-          colPtr[i] = B._container[i * C + c];
-        }
         for (size_t r = 0; r < R; r++) {
           _container[r * C + c]
               = std::inner_product(A._container.begin() + r * C,
                                    A._container.begin() + (r + 1) * C,
-                                   colPtr.cbegin(),
+                                   BB->_container.begin() + (c * R),
                                    Zero()(),
                                    Plus(),
                                    Prod());
         }
       }
+      if (&A != &B) {
+        const_cast<Matrix&>(B).transpose();
+      } else {
+        delete BB;
+      }
+      LIBSEMIGROUPS_ASSERT(B == BB);
     }
 
     void transpose() {
       static_assert(C == R, "cannot transpose non-square matrix");
       auto& x = *this;
-      for (size_t r = 0; r < R; ++r) {
+      for (size_t r = 0; r < R - 1; ++r) {
         for (size_t c = r + 1; c < C; ++c) {
           std::swap(x(r, c), x(c, r));
         }
@@ -391,7 +399,8 @@ namespace libsemigroups {
     // TODO: replace
     // void
     // right_product(std::vector<std::array<scalar_type, N>>&       res,
-    //               std::vector<std::array<scalar_type, N>> const& rows) const
+    //               std::vector<std::array<scalar_type, N>> const& rows)
+    //               const
     //               {
     //   // TODO assertions
     //   // TODO duplication

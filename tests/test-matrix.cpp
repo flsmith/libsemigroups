@@ -283,6 +283,18 @@ namespace libsemigroups {
     REQUIRE(r[1] == Row({0, 1, 0, 1}));
     REQUIRE(r[2] == Row({1, NEGATIVE_INFINITY, 0, 0}));
     REQUIRE(r[3] == Row({2, 2, 0, 1}));
+    m.transpose();
+    REQUIRE(m
+            == Mat({{2, 0, 1, 0},
+                    {2, 0, NEGATIVE_INFINITY, 1},
+                    {0, 1, 0, 0},
+                    {1, 3, 0, 1}}));
+    m.transpose();
+    REQUIRE(m
+            == Mat({{2, 2, 0, 1},
+                    {0, 0, 1, 3},
+                    {1, NEGATIVE_INFINITY, 0, 0},
+                    {0, 1, 0, 1}}));
 
     std::vector<std::array<int64_t, 4>> expected;
     expected.push_back({2, 2, 0, 1});
