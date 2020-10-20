@@ -19,6 +19,8 @@
 // This file contains a generic implementation of a class Action which
 // represents the action of a semigroup on a set.
 
+// TODO(later): add a class for enumerating orbits without their graphs
+
 #ifndef LIBSEMIGROUPS_ACTION_HPP_
 #define LIBSEMIGROUPS_ACTION_HPP_
 
@@ -646,11 +648,11 @@ namespace libsemigroups {
             auto it = _map.find(_tmp_point);
             if (it == _map.end()) {
               _graph.add_nodes(1);
-              _graph.add_edge(i, _orb.size(), j);
+              _graph.add_edge_nc(i, _orb.size(), j);
               _orb.push_back(this->internal_copy(_tmp_point));
               _map.emplace(_orb.back(), _orb.size() - 1);
             } else {
-              _graph.add_edge(i, (*it).second, j);
+              _graph.add_edge_nc(i, (*it).second, j);
             }
           }
         }
@@ -664,11 +666,11 @@ namespace libsemigroups {
           auto it = _map.find(_tmp_point);
           if (it == _map.end()) {
             _graph.add_nodes(1);
-            _graph.add_edge(_pos, _orb.size(), j);
+            _graph.add_edge_nc(_pos, _orb.size(), j);
             _orb.push_back(this->internal_copy(_tmp_point));
             _map.emplace(_orb.back(), _orb.size() - 1);
           } else {
-            _graph.add_edge(_pos, (*it).second, j);
+            _graph.add_edge_nc(_pos, (*it).second, j);
           }
         }
         if (report()) {

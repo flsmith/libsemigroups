@@ -413,7 +413,7 @@ namespace libsemigroups {
 
     //! Add an edge from \p i to \p j labelled \p lbl.
     //! If \p i and \p j are nodes in \c this, and \p lbl is in the range [0,
-    //! out_degree()), then this method adds an edge edge from \p i to \p j
+    //! out_degree()), then this method adds an edge from \p i to \p j
     //! labelled \p lbl.
     //!
     //! \param i the source node
@@ -429,11 +429,36 @@ namespace libsemigroups {
     //!
     //! \complexity
     //! Constant.
+    //!
+    //! \sa add_edge_nc
     // Not noexcept because validate_node/label aren't
     void inline add_edge(node_type i, node_type j, label_type lbl) {
       action_digraph_helper::validate_node(*this, i);
       action_digraph_helper::validate_node(*this, j);
       action_digraph_helper::validate_label(*this, lbl);
+      add_edge_nc(i, j, lbl);
+    }
+
+    //! Add an edge from \p i to \p j labelled \p lbl.
+    //! If \p i and \p j are nodes in \c this, and \p lbl is in the range [0,
+    //! out_degree()), then this method adds an edge from \p i to \p j
+    //! labelled \p lbl without validating the arguments.
+    //!
+    //! \param i the source node
+    //! \param j the range node
+    //! \param lbl the label of the edge from \p i to \p j
+    //!
+    //! \returns
+    //! (None)
+    //!
+    //! \strong_guarantee
+    //!
+    //! \complexity
+    //! Constant.
+    //!
+    //! \sa add_edge
+    // Not noexcept because DynamicArray2::set isn't.
+    void inline add_edge_nc(node_type i, node_type j, label_type lbl) {
       _dynamic_array_2.set(i, lbl, j);
       reset();
     }
