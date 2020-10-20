@@ -696,6 +696,7 @@ test_all_SOURCES += tests/test-konieczny-bmat8-3.cpp
 test_all_SOURCES += tests/test-konieczny-transf.cpp
 test_all_SOURCES += tests/test-konieczny-booleanmat.cpp
 test_all_SOURCES += tests/test-konieczny-pperm.cpp
+test_all_SOURCES += tests/test-konieczny-tropmaxplusmat.cpp
 test_all_SOURCES += tests/test-main.cpp
 test_all_SOURCES += tests/test-matrix.cpp
 test_all_SOURCES += tests/test-obvinf.cpp
@@ -818,6 +819,7 @@ test_konieczny_SOURCES += tests/test-konieczny-bmat8-3.cpp
 test_konieczny_SOURCES += tests/test-konieczny-transf.cpp
 test_konieczny_SOURCES += tests/test-konieczny-booleanmat.cpp
 test_konieczny_SOURCES += tests/test-konieczny-pperm.cpp
+test_konieczny_SOURCES += tests/test-konieczny-tropmaxplusmat.cpp
 test_konieczny_SOURCES += tests/test-main.cpp
 
 test_matrix_SOURCES =  tests/test-matrix.cpp

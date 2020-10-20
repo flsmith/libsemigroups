@@ -20,8 +20,6 @@
 #include <cstdint>  // for int64_t
 #include <vector>   // for vector
 
-#include <iostream>  // TODO remove this, debugging only
-
 #include "catch.hpp"                           // for LIBSEMIGROUPS_TEST_CASE
 #include "libsemigroups/bruidhinn-traits.hpp"  // for detail::BruidhinnTraits
 #include "libsemigroups/froidure-pin.hpp"  // for FroidurePin, FroidurePin<>::eleme...
@@ -177,6 +175,51 @@ namespace libsemigroups {
       tropical_max_plus_row_basis<2, 9>(expected);
       REQUIRE(expected.size() == rb.size());
       REQUIRE(std::equal(rb.cbegin(), rb.cend(), expected.cbegin()));
+    }
+  }
+
+  LIBSEMIGROUPS_TEST_CASE("FroidurePin",
+                          "500",
+                          "(new tropical max-plus matrices)",
+                          "[quick][froidure-pin][tropmaxplus]") {
+    using Mat = TropicalMaxPlusMat<2, 9>;
+    std::vector<Mat> gens
+        = {Mat({{1, 3}, {2, 1}}),
+           Mat({{2, 1}, {4, 0}})};
+    FroidurePin<Mat> S
+        = FroidurePin<Mat>(gens);
+
+    S.reserve(4);
+    auto rg = ReportGuard(REPORT);
+
+    REQUIRE(S.size() == 20);
+    REQUIRE(S.nr_idempotents() == 1);
+    size_t pos = 0;
+
+    for (auto it = S.cbegin(); it < S.cend(); ++it) {
+      REQUIRE(S.position(*it) == pos);
+      pos++;
+    }
+    S.add_generators({Mat({{1, 1}, {0, 2}})});
+    REQUIRE(S.size() == 73);
+    S.closure({Mat({{1, 1}, {0, 2}})});
+    REQUIRE(S.size() == 73);
+    REQUIRE(S.minimal_factorisation(
+                Mat({{1, 1}, {0, 2}})
+                * Mat({{2, 1}, {4, 0}}))
+            == word_type({2, 1}));
+    REQUIRE(S.minimal_factorisation(52) == word_type({0, 2, 2, 1}));
+    REQUIRE(S.at(52) == Mat({{9, 7}, {9, 5}}));
+    REQUIRE_THROWS_AS(S.minimal_factorisation(1000000000),
+                      LibsemigroupsException);
+    pos = 0;
+    for (auto it = S.cbegin_idempotents(); it < S.cend_idempotents(); ++it) {
+      REQUIRE(*it * *it == *it);
+      pos++;
+    }
+    REQUIRE(pos == S.nr_idempotents());
+    for (auto it = S.cbegin_sorted() + 1; it < S.cend_sorted(); ++it) {
+      REQUIRE(*(it - 1) < *it);
     }
   }
 }  // namespace libsemigroups

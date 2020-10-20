@@ -203,6 +203,10 @@ namespace libsemigroups {
     // Constructors + destructor
     ////////////////////////////////////////////////////////////////////////
 
+    // TODO remove
+    using row_type = typename std::array<entry_type, N>;
+    using row_collection_type = typename std::vector<row_type>;
+
     Matrix() = default;
 
     explicit Matrix(row_view_type const& rv) : _container() {
