@@ -20,11 +20,12 @@
 #include <cstdint>  // for int64_t
 #include <vector>   // for vector
 
+#include <iostream>  // TODO remove this, debugging only
+
 #include "catch.hpp"                           // for LIBSEMIGROUPS_TEST_CASE
 #include "libsemigroups/bruidhinn-traits.hpp"  // for detail::BruidhinnTraits
-#include "libsemigroups/element-adapters.hpp"  // for Degree etc
-#include "libsemigroups/element.hpp"           // for MatrixOverSemiring
 #include "libsemigroups/froidure-pin.hpp"  // for FroidurePin, FroidurePin<>::eleme...
+#include "libsemigroups/matrix.hpp"        // for MatrixOverSemiring
 #include "libsemigroups/semiring.hpp"  // for TropicalMaxPlusSemiring, Semiring
 #include "test-main.hpp"
 
@@ -32,21 +33,91 @@ namespace libsemigroups {
   // Forward declaration
   struct LibsemigroupsException;
 
+  template <typename Plus, typename Container>
+  struct RowAddition {
+    void operator()(Container& x, Container const& y) const {
+      LIBSEMIGROUPS_ASSERT(x.size() == y.size());
+      for (size_t i = 0; i < x.size(); ++i) {
+        x[i] = Plus()(x[i], y[i]);
+      }
+    }
+
+    void operator()(Container&       res,
+                    Container const& x,
+                    Container const& y) const {
+      LIBSEMIGROUPS_ASSERT(res.size() == x.size());
+      LIBSEMIGROUPS_ASSERT(x.size() == y.size());
+      for (size_t i = 0; i < x.size(); ++i) {
+        res[i] = Plus()(x[i], y[i]);
+      }
+    }
+  };
+
+  template <typename Prod, typename Container>
+  Container scalar_row_product(Container                      row,
+                               typename Container::value_type scalar) {
+    Container out(row);
+    for (size_t i = 0; i < out.size(); ++i) {
+      out[i] = Prod()(out[i], scalar);
+    }
+    return out;
+  }
+
+  template <size_t dim, size_t thresh>
+  void
+  tropical_max_plus_row_basis(std::vector<std::array<int64_t, dim>>& rows) {
+    static thread_local std::vector<std::array<int64_t, dim>> buf;
+    buf.clear();
+    std::sort(rows.begin(), rows.end());
+    for (size_t row = 0; row < rows.size(); ++row) {
+      std::array<int64_t, dim> sum;
+      sum.fill(NEGATIVE_INFINITY);
+      if (row == 0 || rows[row] != rows[row - 1]) {
+        for (size_t row2 = 0; row2 < row; ++row2) {
+          int64_t max_scalar = thresh;
+          for (size_t col = 0; col < dim; ++col) {
+            if (rows[row2][col] == NEGATIVE_INFINITY) {
+              continue;
+            }
+            if (rows[row][col] >= rows[row2][col]) {
+              if (rows[row][col] != thresh) {
+                max_scalar
+                    = std::min(max_scalar, rows[row][col] - rows[row2][col]);
+              }
+            } else {
+              max_scalar = NEGATIVE_INFINITY;
+              break;
+            }
+          }
+          if (max_scalar != NEGATIVE_INFINITY) {
+            auto scalar_prod = scalar_row_product<MaxPlusProd<thresh>,
+                                                  std::array<int64_t, dim>>(
+                rows[row2], max_scalar);
+            RowAddition<MaxPlusPlus, std::array<int64_t, dim>>()(sum,
+                                                                 scalar_prod);
+          }
+        }
+        if (sum != rows[row]) {
+          buf.push_back(rows[row]);
+        }
+      }
+    }
+    std::swap(buf, rows);
+  }
+
   constexpr bool REPORT = false;
 
   LIBSEMIGROUPS_TEST_CASE("FroidurePin",
                           "125",
                           "(tropical max-plus semiring matrices)",
                           "[quick][froidure-pin][tropmaxplus]") {
-    Semiring<int64_t>* sr = new TropicalMaxPlusSemiring(9);
-    std::vector<MatrixOverSemiring<int64_t>> gens
-        = {MatrixOverSemiring<int64_t>({{1, 3}, {2, 1}}, sr),
-           MatrixOverSemiring<int64_t>({{2, 1}, {4, 0}}, sr)};
-    FroidurePin<MatrixOverSemiring<int64_t>> S
-        = FroidurePin<MatrixOverSemiring<int64_t>>(gens);
+    auto rg   = ReportGuard(REPORT);
+    using Mat = TropicalMaxPlusMat<2, 2, 9>;
+    using Row = typename Mat::Row;
 
-    S.reserve(4);
-    auto rg = ReportGuard(REPORT);
+    FroidurePin<Mat> S;
+    S.add_generator(Mat({{1, 3}, {2, 1}}));
+    S.add_generator(Mat({{2, 1}, {4, 0}}));
 
     REQUIRE(S.size() == 20);
     REQUIRE(S.nr_idempotents() == 1);
@@ -56,16 +127,15 @@ namespace libsemigroups {
       REQUIRE(S.position(*it) == pos);
       pos++;
     }
-    S.add_generators({MatrixOverSemiring<int64_t>({{1, 1}, {0, 2}}, sr)});
+    S.add_generator(Mat({{1, 1}, {0, 2}}));
     REQUIRE(S.size() == 73);
-    S.closure({MatrixOverSemiring<int64_t>({{1, 1}, {0, 2}}, sr)});
+    S.closure({Mat({{1, 1}, {0, 2}})});
     REQUIRE(S.size() == 73);
-    REQUIRE(S.minimal_factorisation(
-                MatrixOverSemiring<int64_t>({{1, 1}, {0, 2}}, sr)
-                * MatrixOverSemiring<int64_t>({{2, 1}, {4, 0}}, sr))
-            == word_type({2, 1}));
+    REQUIRE(
+        S.minimal_factorisation(Mat({{1, 1}, {0, 2}}) * Mat({{2, 1}, {4, 0}}))
+        == word_type({2, 1}));
     REQUIRE(S.minimal_factorisation(52) == word_type({0, 2, 2, 1}));
-    REQUIRE(S.at(52) == MatrixOverSemiring<int64_t>({{9, 7}, {9, 5}}, sr));
+    REQUIRE(S.at(52) == Mat({{9, 7}, {9, 5}}));
     REQUIRE_THROWS_AS(S.minimal_factorisation(1000000000),
                       LibsemigroupsException);
     pos = 0;
@@ -78,6 +148,35 @@ namespace libsemigroups {
       REQUIRE(*(it - 1) < *it);
     }
 
-    delete sr;
+    auto const& x  = S[4];
+    auto        rb = matrix_helpers::row_basis(x);
+    REQUIRE(rb.size() == 1);
+    REQUIRE(rb[0] == Row({3, 5}));
+    REQUIRE(x.row(0) == Row({3, 5}));
+    REQUIRE(x.row(1) == Row({5, 7}));
+
+    std::vector<std::array<int64_t, 2>> expected;
+    for (auto& r : matrix_helpers::rows(x)) {
+      std::array<int64_t, 2> rr;
+      std::copy(r.cbegin(), r.cend(), rr.begin());
+      expected.push_back(rr);
+    }
+    REQUIRE(std::array<int64_t, 2>({3, 5}) == expected.at(0));
+    REQUIRE(std::array<int64_t, 2>({5, 7}) == expected.at(1));
+    tropical_max_plus_row_basis<2, 9>(expected);
+    REQUIRE(expected.size() == rb.size());
+
+    for (auto const& x : S) {
+      auto                                rb = matrix_helpers::row_basis(x);
+      std::vector<std::array<int64_t, 2>> expected;
+      for (auto& r : matrix_helpers::rows(x)) {
+        std::array<int64_t, 2> rr;
+        std::copy(r.cbegin(), r.cend(), rr.begin());
+        expected.push_back(rr);
+      }
+      tropical_max_plus_row_basis<2, 9>(expected);
+      REQUIRE(expected.size() == rb.size());
+      REQUIRE(std::equal(rb.cbegin(), rb.cend(), expected.cbegin()));
+    }
   }
 }  // namespace libsemigroups

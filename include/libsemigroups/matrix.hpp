@@ -21,6 +21,7 @@
 
 #include <algorithm>  // for min
 
+#include "adapters.hpp"
 #include "constants.hpp"
 #include "libsemigroups-debug.hpp"
 #include "order.hpp"
@@ -63,6 +64,8 @@ namespace libsemigroups {
 
     RowView() = default;
     explicit RowView(iterator first) : _begin(first) {}
+    explicit RowView(const_iterator first)
+        : _begin(const_cast<iterator>(first)) {}
     explicit RowView(Row const& r) : _begin(const_cast<Row&>(r).begin()) {}
 
     RowView(RowView const&) = default;
@@ -135,10 +138,7 @@ namespace libsemigroups {
       return result;
     }
 
-    template <typename T,
-              typename
-              = typename std::enable_if<std::is_same<T, RowView>::value
-                                        || std::is_same<T, Row>::value>::type>
+    template <typename T>
     bool operator==(T const& that) const {
       return std::equal(begin(), end(), that.begin());
     }
@@ -164,6 +164,8 @@ namespace libsemigroups {
     iterator _begin;
   };
 
+  struct MatrixPolymorphicBase {};
+
   template <typename PlusOp,
             typename ProdOp,
             typename ZeroOp,
@@ -171,7 +173,7 @@ namespace libsemigroups {
             size_t R,
             size_t C,
             typename Container>
-  class Matrix {
+  class Matrix : MatrixPolymorphicBase {
    public:
     using scalar_type    = typename Container::value_type;
     using container_type = Container;
@@ -185,8 +187,12 @@ namespace libsemigroups {
     // FIXME Container in the next two lines has the wrong size if it's an
     // array, because Container = std::array<scalar_type, R * C> and it should
     // be std::array<scalar_type, C> in the following two aliases.
-    using Row     = Row<PlusOp, ProdOp, ZeroOp, OneOp, C, Container>;
-    using RowView = RowView<PlusOp, ProdOp, ZeroOp, OneOp, C, Container>;
+    using RowContainer = typename std::conditional<
+        std::is_same<std::array<scalar_type, R * C>, Container>::value,
+        std::array<scalar_type, C>,
+        Container>::type;
+    using Row     = Row<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
+    using RowView = RowView<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
 
     static_assert(std::is_trivial<RowView>(),
                   "RowView is not a trivial class!");
@@ -293,6 +299,10 @@ namespace libsemigroups {
 
     static constexpr size_t number_of_cols() noexcept {
       return C;
+    }
+
+    size_t hash_value() const {
+      return Hash<Container>()(_container);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -447,6 +457,11 @@ namespace libsemigroups {
       }
     }
 
+    RowView row(size_t i) const {
+      LIBSEMIGROUPS_ASSERT(i < R);
+      return RowView(_container.cbegin() + i * C);
+    }
+
     void rows(std::array<RowView, R>& x) const {
       auto it = const_cast<typename Container::iterator>(_container.begin());
       for (size_t r = 0; r < R; ++r) {
@@ -467,7 +482,9 @@ namespace libsemigroups {
     // TODO formatting
     friend std::ostringstream& operator<<(std::ostringstream& os,
                                           Matrix const&       x) {
-      os << x._container;
+      if (R == 1) {
+        os << x._container;
+      }
       return os;
     }
 
@@ -592,36 +609,6 @@ namespace libsemigroups {
                                     std::array<int64_t, R * C>>;
 
   namespace matrix_helpers {
-    template <typename Plus, typename Container>
-    struct RowAddition {
-      void operator()(Container& x, Container const& y) const {
-        LIBSEMIGROUPS_ASSERT(x.size() == y.size());
-        for (size_t i = 0; i < x.size(); ++i) {
-          x[i] = Plus()(x[i], y[i]);
-        }
-      }
-
-      void operator()(Container&       res,
-                      Container const& x,
-                      Container const& y) const {
-        LIBSEMIGROUPS_ASSERT(res.size() == x.size());
-        LIBSEMIGROUPS_ASSERT(x.size() == y.size());
-        for (size_t i = 0; i < x.size(); ++i) {
-          res[i] = Plus()(x[i], y[i]);
-        }
-      }
-    };
-
-    template <typename Prod, typename Container>
-    Container scalar_row_product(Container                      row,
-                                 typename Container::value_type scalar) {
-      Container out(row);
-      for (size_t i = 0; i < out.size(); ++i) {
-        out[i] = Prod()(out[i], scalar);
-      }
-      return out;
-    }
-
     template <typename T,
               typename S = std::array<typename T::RowView, T::number_of_rows()>>
     S rows(T const& x) {
@@ -689,51 +676,72 @@ namespace libsemigroups {
       return result;
     }
 
-    template <size_t dim, size_t thresh>
-    void
-    tropical_max_plus_row_basis(std::vector<std::array<int64_t, dim>>& rows) {
-      //! Modifies \p res to contain the row space basis of \p x.
-      // TODO assertions, proper types
-      static thread_local std::vector<std::array<int64_t, dim>> buf;
-      buf.clear();
-      std::sort(rows.begin(), rows.end());
-      for (size_t row = 0; row < rows.size(); ++row) {
-        // TODO fix this def
-        std::array<int64_t, dim> sum;
-        sum.fill(NEGATIVE_INFINITY);
-        if (row == 0 || rows[row] != rows[row - 1]) {
-          for (size_t row2 = 0; row2 < row; ++row2) {
-            int64_t max_scalar = thresh;
-            for (size_t col = 0; col < dim; ++col) {
-              if (rows[row2][col] == NEGATIVE_INFINITY) {
-                continue;
-              }
-              if (rows[row][col] >= rows[row2][col]) {
-                if (rows[row][col] != thresh) {
-                  max_scalar
-                      = std::min(max_scalar, rows[row][col] - rows[row2][col]);
-                }
-              } else {
-                max_scalar = NEGATIVE_INFINITY;
-                break;
-              }
-            }
-            if (max_scalar != NEGATIVE_INFINITY) {
-              auto scalar_prod = scalar_row_product<MaxPlusProd<thresh>,
-                                                    std::array<int64_t, dim>>(
-                  rows[row2], max_scalar);
-              RowAddition<MaxPlusPlus, std::array<int64_t, dim>>()(sum,
-                                                                   scalar_prod);
-            }
-          }
-          if (sum != rows[row]) {
-            buf.push_back(rows[row]);
-          }
-        }
-      }
-      std::swap(buf, rows);
-    }
   }  // namespace matrix_helpers
+
+  ////////////////////////////////////////////////////////////////////////
+  // Adapters
+  ////////////////////////////////////////////////////////////////////////
+
+  template <typename T>
+  struct Complexity<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    constexpr size_t operator()(T const& x) const {
+      return x.number_of_rows() * x.number_of_rows() * x.number_of_rows();
+    }
+  };
+
+  template <typename T>
+  struct Degree<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    constexpr size_t operator()(T const& x) const {
+      return x.number_of_rows();
+    }
+  };
+
+  template <typename T>
+  struct Hash<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    constexpr size_t operator()(T const& x) const {
+      return x.hash_value();
+    }
+  };
+
+  template <typename T>
+  struct IncreaseDegree<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    void operator()(T&, size_t) const {
+      // static_assert(false, "Cannot increase degree for Matrix");
+      LIBSEMIGROUPS_ASSERT(false);
+    }
+  };
+
+  template <typename T>
+  struct One<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    inline T operator()(T const& x) const {
+      return x.identity();
+    }
+  };
+
+  template <typename T>
+  struct Product<
+      T,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    inline void operator()(T& xy, T const& x, T const& y, size_t = 0) const {
+      xy.product_inplace(x, y);
+    }
+  };
 
 }  // namespace libsemigroups
 

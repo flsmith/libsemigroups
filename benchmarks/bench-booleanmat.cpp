@@ -84,7 +84,7 @@ namespace libsemigroups {
     BMat<N> xx;
     for (size_t r = 0; r < x.degree(); ++r) {
       for (size_t c = 0; c < x.degree(); ++c) {
-        xx(r, c, x.at(r * N + c));
+        xx(r, c) = x.at(r * N + c);
       }
     }
     return xx;
@@ -114,7 +114,7 @@ namespace libsemigroups {
     REQUIRE(clark.size() == 6);
     REQUIRE(result2.size() == 1600);
 
-    BENCHMARK("inner product") {
+    BENCHMARK("inner product direct") {
       for (size_t i = 0; i < 500; ++i) {
         for (auto& y : clark) {
           mymatmult(result1, result2, y);
@@ -133,7 +133,7 @@ namespace libsemigroups {
     auto result2 = clark.back();
     REQUIRE(clark.size() == 6);
 
-    BENCHMARK("inner product") {
+    BENCHMARK("product_inplace") {
       for (size_t i = 0; i < 500; ++i) {
         for (auto& y : clark) {
           result1.product_inplace(result2, y);

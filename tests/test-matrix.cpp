@@ -27,6 +27,77 @@
 
 namespace libsemigroups {
   constexpr bool REPORT = false;
+  template <typename Plus, typename Container>
+  struct RowAddition {
+    void operator()(Container& x, Container const& y) const {
+      LIBSEMIGROUPS_ASSERT(x.size() == y.size());
+      for (size_t i = 0; i < x.size(); ++i) {
+        x[i] = Plus()(x[i], y[i]);
+      }
+    }
+
+    void operator()(Container&       res,
+                    Container const& x,
+                    Container const& y) const {
+      LIBSEMIGROUPS_ASSERT(res.size() == x.size());
+      LIBSEMIGROUPS_ASSERT(x.size() == y.size());
+      for (size_t i = 0; i < x.size(); ++i) {
+        res[i] = Plus()(x[i], y[i]);
+      }
+    }
+  };
+
+  template <typename Prod, typename Container>
+  Container scalar_row_product(Container                      row,
+                               typename Container::value_type scalar) {
+    Container out(row);
+    for (size_t i = 0; i < out.size(); ++i) {
+      out[i] = Prod()(out[i], scalar);
+    }
+    return out;
+  }
+
+  template <size_t dim, size_t thresh>
+  void
+  tropical_max_plus_row_basis(std::vector<std::array<int64_t, dim>>& rows) {
+    static thread_local std::vector<std::array<int64_t, dim>> buf;
+    buf.clear();
+    std::sort(rows.begin(), rows.end());
+    for (size_t row = 0; row < rows.size(); ++row) {
+      std::array<int64_t, dim> sum;
+      sum.fill(NEGATIVE_INFINITY);
+      if (row == 0 || rows[row] != rows[row - 1]) {
+        for (size_t row2 = 0; row2 < row; ++row2) {
+          int64_t max_scalar = thresh;
+          for (size_t col = 0; col < dim; ++col) {
+            if (rows[row2][col] == NEGATIVE_INFINITY) {
+              continue;
+            }
+            if (rows[row][col] >= rows[row2][col]) {
+              if (rows[row][col] != thresh) {
+                max_scalar
+                    = std::min(max_scalar, rows[row][col] - rows[row2][col]);
+              }
+            } else {
+              max_scalar = NEGATIVE_INFINITY;
+              break;
+            }
+          }
+          if (max_scalar != NEGATIVE_INFINITY) {
+            auto scalar_prod = scalar_row_product<MaxPlusProd<thresh>,
+                                                  std::array<int64_t, dim>>(
+                rows[row2], max_scalar);
+            RowAddition<MaxPlusPlus, std::array<int64_t, dim>>()(sum,
+                                                                 scalar_prod);
+          }
+        }
+        if (sum != rows[row]) {
+          buf.push_back(rows[row]);
+        }
+      }
+    }
+    std::swap(buf, rows);
+  }
 
   LIBSEMIGROUPS_TEST_CASE("Matrix", "001", "", "[quick]") {
     auto    rg = ReportGuard(REPORT);
@@ -101,7 +172,7 @@ namespace libsemigroups {
       std::vector<std::array<int64_t, 2>> expected;
       expected.push_back({1, 1});
       expected.push_back({0, 0});
-      matrix_helpers::tropical_max_plus_row_basis<2, 5>(expected);
+      tropical_max_plus_row_basis<2, 5>(expected);
       REQUIRE(expected.size() == 1);
       REQUIRE(expected.at(0) == std::array<int64_t, 2>({0, 0}));
 
@@ -195,6 +266,31 @@ namespace libsemigroups {
     REQUIRE(r[3] != x);
     REQUIRE(x != r[3]);
     REQUIRE(!(x != x));
+  }
+
+  LIBSEMIGROUPS_TEST_CASE("TropicalMaxPlusMat", "008", "row space", "[quick]") {
+    using Mat = TropicalMaxPlusMat<4, 4, 5>;
+    using Row = typename Mat::Row;
+
+    Mat  m({{2, 2, 0, 1},
+           {0, 0, 1, 3},
+           {1, NEGATIVE_INFINITY, 0, 0},
+           {0, 1, 0, 1}});
+    auto rg = ReportGuard(REPORT);
+    auto r  = matrix_helpers::row_basis(m);
+    REQUIRE(r.size() == 4);
+    REQUIRE(r[0] == Row({0, 0, 1, 3}));
+    REQUIRE(r[1] == Row({0, 1, 0, 1}));
+    REQUIRE(r[2] == Row({1, NEGATIVE_INFINITY, 0, 0}));
+    REQUIRE(r[3] == Row({2, 2, 0, 1}));
+
+    std::vector<std::array<int64_t, 4>> expected;
+    expected.push_back({2, 2, 0, 1});
+    expected.push_back({0, 0, 1, 3});
+    expected.push_back({1, NEGATIVE_INFINITY, 0, 0});
+    expected.push_back({0, 1, 0, 1});
+    tropical_max_plus_row_basis<4, 5>(expected);
+    REQUIRE(expected.size() == 4);
   }
 
 }  // namespace libsemigroups
