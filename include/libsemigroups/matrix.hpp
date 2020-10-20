@@ -311,13 +311,15 @@ namespace libsemigroups {
 
     void product_inplace(Matrix const& A, Matrix const& B) {
       static_assert(R == C, "can only multiply square matrices");
-      Matrix* BB = &const_cast<Matrix&>(B);
+      static thread_local Matrix buf;
+      Matrix*                    BB = &const_cast<Matrix&>(B);
       if (&A == &B) {
-        BB = new Matrix(B);
+        buf = B;
+        BB  = &buf;
       }
       BB->transpose();
 
-      LIBSEMIGROUPS_ASSERT(&A != &BB);
+      LIBSEMIGROUPS_ASSERT(&A != BB);
 
       for (size_t c = 0; c < C; c++) {
         for (size_t r = 0; r < R; r++) {
@@ -332,10 +334,7 @@ namespace libsemigroups {
       }
       if (&A != &B) {
         const_cast<Matrix&>(B).transpose();
-      } else {
-        delete BB;
       }
-      LIBSEMIGROUPS_ASSERT(B == BB);
     }
 
     void transpose() {
@@ -484,7 +483,7 @@ namespace libsemigroups {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Conversion operators - rows only
+    // Infix
     ////////////////////////////////////////////////////////////////////////
 
     //! Insertion operator
