@@ -135,7 +135,7 @@ namespace libsemigroups {
   LIBSEMIGROUPS_TEST_CASE("Matrix", "004", "rows", "[quick]") {
     auto    rg = ReportGuard(REPORT);
     BMat<2> m({1, 1, 0, 0});
-    using RowView = typename BMat<2>::RowView;
+    using RowView = typename BMat<2>::row_view_type;
     auto r        = matrix_helpers::rows(m);
     REQUIRE(std::vector<bool>(r[0].cbegin(), r[0].cend())
             == std::vector<bool>({true, true}));
@@ -195,8 +195,8 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("PMat", "006", "row view", "[quick]") {
     using Mat         = PMat<4, 4, 10>;
-    using Row         = typename Mat::Row;
-    using RowView     = typename Mat::RowView;
+    using Row         = typename Mat::row_type;
+    using RowView     = typename Mat::row_view_type;
     using scalar_type = typename Mat::scalar_type;
 
     auto rg = ReportGuard(REPORT);
@@ -242,7 +242,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("PMat", "007", "row view vs row", "[quick]") {
     using Mat = PMat<4, 4, 10>;
-    using Row = typename Mat::Row;
+    using Row = typename Mat::row_type;
 
     auto rg = ReportGuard(REPORT);
     Mat  m({{1, 1, 0, 0}, {2, 0, 2, 0}, {1, 2, 3, 9}, {0, 0, 0, 7}});
@@ -270,7 +270,7 @@ namespace libsemigroups {
 
   LIBSEMIGROUPS_TEST_CASE("TropicalMaxPlusMat", "008", "row space", "[quick]") {
     using Mat = TropicalMaxPlusMat<4, 4, 5>;
-    using Row = typename Mat::Row;
+    using Row = typename Mat::row_type;
 
     Mat  m({{2, 2, 0, 1},
            {0, 0, 1, 3},

@@ -60,13 +60,14 @@ namespace libsemigroups {
     using iterator       = typename Container::iterator;
     using scalar_type    = typename Container::value_type;
 
-    using Row = Row<PlusOp, ProdOp, ZeroOp, OneOp, N, Container>;
+    using row_type = Row<PlusOp, ProdOp, ZeroOp, OneOp, N, Container>;
 
     RowView() = default;
     explicit RowView(iterator first) : _begin(first) {}
     explicit RowView(const_iterator first)
         : _begin(const_cast<iterator>(first)) {}
-    explicit RowView(Row const& r) : _begin(const_cast<Row&>(r).begin()) {}
+    explicit RowView(row_type const& r)
+        : _begin(const_cast<row_type&>(r).begin()) {}
 
     RowView(RowView const&) = default;
     RowView(RowView&&)      = default;
@@ -132,8 +133,8 @@ namespace libsemigroups {
       }
     }
 
-    Row operator*(scalar_type a) const {
-      Row result(*this);
+    row_type operator*(scalar_type a) const {
+      row_type result(*this);
       result *= a;
       return result;
     }
@@ -144,17 +145,17 @@ namespace libsemigroups {
     }
 
     template <typename T,
-              typename
-              = typename std::enable_if<std::is_same<T, RowView>::value
-                                        || std::is_same<T, Row>::value>::type>
+              typename = typename std::enable_if<
+                  std::is_same<T, RowView>::value
+                  || std::is_same<T, row_type>::value>::type>
     bool operator!=(T const& that) const {
       return !(*this == that);
     }
 
     template <typename T,
-              typename
-              = typename std::enable_if<std::is_same<T, RowView>::value
-                                        || std::is_same<T, Row>::value>::type>
+              typename = typename std::enable_if<
+                  std::is_same<T, RowView>::value
+                  || std::is_same<T, row_type>::value>::type>
     bool operator<(T const& that) const {
       return std::lexicographical_compare(
           cbegin(), cend(), that.cbegin(), that.cend());
@@ -191,10 +192,11 @@ namespace libsemigroups {
         std::is_same<std::array<scalar_type, R * C>, Container>::value,
         std::array<scalar_type, C>,
         Container>::type;
-    using Row     = Row<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
-    using RowView = RowView<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
+    using row_type = Row<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
+    using row_view_type
+        = RowView<PlusOp, ProdOp, ZeroOp, OneOp, C, RowContainer>;
 
-    static_assert(std::is_trivial<RowView>(),
+    static_assert(std::is_trivial<row_view_type>(),
                   "RowView is not a trivial class!");
 
     ////////////////////////////////////////////////////////////////////////
@@ -203,7 +205,7 @@ namespace libsemigroups {
 
     Matrix() = default;
 
-    explicit Matrix(RowView const& rv) : _container() {
+    explicit Matrix(row_view_type const& rv) : _container() {
       std::copy(rv.cbegin(), rv.cend(), begin());
       static_assert(
           R == 1, "Cannot construct matrix with more than 1 row from RowView");
@@ -237,7 +239,7 @@ namespace libsemigroups {
     Matrix& operator=(Matrix const&) = default;
     Matrix& operator=(Matrix&&) = default;
 
-    Matrix& operator=(RowView const& rv) {
+    Matrix& operator=(row_view_type const& rv) {
       static_assert(
           R == 1, "Cannot construct matrix with more than 1 row from RowView");
       std::copy(rv.cbegin(), rv.cend(), begin());
@@ -266,19 +268,19 @@ namespace libsemigroups {
     // Comparison with RowView operators
     ////////////////////////////////////////////////////////////////////////
 
-    bool operator==(RowView const& other) const {
+    bool operator==(row_view_type const& other) const {
       static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
-      return static_cast<RowView>(*this) == other;
+      return static_cast<row_view_type>(*this) == other;
     }
 
-    bool operator!=(RowView const& other) const {
+    bool operator!=(row_view_type const& other) const {
       static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
-      return static_cast<RowView>(*this) != other;
+      return static_cast<row_view_type>(*this) != other;
     }
 
-    bool operator<(RowView const& other) const {
+    bool operator<(row_view_type const& other) const {
       static_assert(R == 1, "Cannot compare non-row matrices and RowView!");
-      return static_cast<RowView>(*this) < other;
+      return static_cast<row_view_type>(*this) < other;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -362,10 +364,10 @@ namespace libsemigroups {
       }
     }
 
-    void operator+=(RowView const& that) {
+    void operator+=(row_view_type const& that) {
       static_assert(R == 1,
                     "cannot add RowView to matrix with more than one row");
-      RowView(*this) += that;
+      row_view_type(*this) += that;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -459,21 +461,21 @@ namespace libsemigroups {
     ////////////////////////////////////////////////////////////////////////
 
     // TODO template for StaticVector1 too
-    void rows(std::vector<RowView>& x) const {
+    void rows(std::vector<row_view_type>& x) const {
       for (auto it = _container.begin(); it < _container.end(); it += C) {
         x.emplace_back(it);
       }
     }
 
-    RowView row(size_t i) const {
+    row_view_type row(size_t i) const {
       LIBSEMIGROUPS_ASSERT(i < R);
-      return RowView(_container.cbegin() + i * C);
+      return row_view_type(_container.cbegin() + i * C);
     }
 
-    void rows(std::array<RowView, R>& x) const {
+    void rows(std::array<row_view_type, R>& x) const {
       auto it = const_cast<typename Container::iterator>(_container.begin());
       for (size_t r = 0; r < R; ++r) {
-        x[r] = RowView(it);
+        x[r] = row_view_type(it);
         it += C;
       }
     }
@@ -618,7 +620,8 @@ namespace libsemigroups {
 
   namespace matrix_helpers {
     template <typename T,
-              typename S = std::array<typename T::RowView, T::number_of_rows()>>
+              typename S
+              = std::array<typename T::row_view_type, T::number_of_rows()>>
     S rows(T const& x) {
       S container;
       x.rows(container);
@@ -629,8 +632,8 @@ namespace libsemigroups {
     void row_basis(TropicalMaxPlusMat<R, C, T> const& x, Container& result) {
       using matrix_type = TropicalMaxPlusMat<R, C, T>;
       using scalar_type = typename matrix_type::scalar_type;
-      using RowView     = typename matrix_type::RowView;
-      using Row         = typename matrix_type::Row;
+      using RowView     = typename matrix_type::row_view_type;
+      using Row         = typename matrix_type::row_type;
       using Zero        = typename matrix_type::Zero;
 
       auto views = rows(x);
@@ -676,7 +679,7 @@ namespace libsemigroups {
               size_t C,
               size_t T,
               typename Container = detail::StaticVector1<
-                  typename TropicalMaxPlusMat<R, C, T>::RowView,
+                  typename TropicalMaxPlusMat<R, C, T>::row_view_type,
                   R>>
     Container row_basis(TropicalMaxPlusMat<R, C, T> const& x) {
       Container result;

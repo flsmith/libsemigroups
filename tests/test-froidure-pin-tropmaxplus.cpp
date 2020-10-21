@@ -113,7 +113,7 @@ namespace libsemigroups {
                           "[quick][froidure-pin][tropmaxplus]") {
     auto rg   = ReportGuard(REPORT);
     using Mat = TropicalMaxPlusMat<2, 2, 9>;
-    using Row = typename Mat::Row;
+    using Row = typename Mat::row_type;
 
     FroidurePin<Mat> S;
     S.add_generator(Mat({{1, 3}, {2, 1}}));
