@@ -67,34 +67,6 @@ namespace libsemigroups {
     }
   };
 
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Complexity<Matrix<Plus, Prod, Zero, One, N, Container>> {
-    //! Returns \p x.degree().
-    inline size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const& x) const {
-      return x.complexity();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Complexity<Matrix<Plus, Prod, Zero, One, N, Container>*> {
-    //! Returns \p x.degree().
-    inline size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const* x) const {
-      return x->complexity();
-    }
-  };
-
   ////////////////////////////////////////////////////////////////////////
   // Degree specializations
   ////////////////////////////////////////////////////////////////////////
@@ -124,34 +96,6 @@ namespace libsemigroups {
     //! Returns \p x.degree().
     inline size_t operator()(TSubclass const& x) const {
       return x.degree();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Degree<Matrix<Plus, Prod, Zero, One, N, Container>> {
-    //! Returns \p x.degree().
-    inline size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const& x) const {
-      return x.degree();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Degree<Matrix<Plus, Prod, Zero, One, N, Container>*> {
-    //! Returns \p x.degree().
-    inline size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const* x) const {
-      return x->degree();
     }
   };
 
@@ -239,44 +183,6 @@ namespace libsemigroups {
       return TSubclass(std::move(TSubclass::identity(n)));
     }
   };
-  
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename SemiringOne,
-            size_t N,
-            typename Container>
-  struct One<Matrix<Plus, Prod, Zero, SemiringOne, N, Container>> {
-    //! Returns \p x.degree().
-    using mat_type = Matrix<Plus, Prod, Zero, SemiringOne, N, Container>;
-    mat_type operator()(mat_type const& x) const {
-      return x.identity();
-    }
-
-    mat_type operator()(size_t n = N) const {
-      LIBSEMIGROUPS_ASSERT(n == N);
-      return mat_type::identity();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename SemiringOne,
-            size_t N,
-            typename Container>
-  struct One<Matrix<Plus, Prod, Zero, SemiringOne, N, Container>*> {
-    //! Returns \p x.degree().
-    using mat_type = Matrix<Plus, Prod, Zero, SemiringOne, N, Container>;
-    mat_type operator()(mat_type const* x) const {
-      return new x.identity();
-    }
-
-    mat_type operator()(size_t n = N) const {
-      LIBSEMIGROUPS_ASSERT(n == N);
-      return new mat_type::identity();
-    }
-  };
 
   ////////////////////////////////////////////////////////////////////////
   // Product specializations
@@ -317,38 +223,6 @@ namespace libsemigroups {
     }
   };
   
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Product<Matrix<Plus, Prod, Zero, One, N, Container>> {
-    using mat_type = Matrix<Plus, Prod, Zero, One, N, Container>;
-    void operator()(mat_type&       xy,
-                    mat_type const& x,
-                    mat_type const& y,
-                    size_t = 0) {
-      xy.product_inplace(x, y);
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Product<Matrix<Plus, Prod, Zero, One, N, Container>*> {
-    using mat_type = Matrix<Plus, Prod, Zero, One, N, Container>;
-    void operator()(mat_type*       xy,
-                    mat_type const* x,
-                    mat_type const* y,
-                    size_t = 0) {
-      xy->product_inplace(*x, *y);
-    }
-  };
-
   ////////////////////////////////////////////////////////////////////////
   // Swap specializations
   ////////////////////////////////////////////////////////////////////////
@@ -422,34 +296,6 @@ namespace libsemigroups {
                   std::is_base_of<Element, TSubclass>::value>::type> {
     //! Returns \p x->hash_value()
     size_t operator()(TSubclass const* x) const {
-      return x->hash_value();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Hash<Matrix<Plus, Prod, Zero, One, N, Container>> {
-    //! Returns \p x.hash_value().
-    size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const& x) const {
-      return x.hash_value();
-    }
-  };
-
-  template <typename Plus,
-            typename Prod,
-            typename Zero,
-            typename One,
-            size_t N,
-            typename Container>
-  struct Hash<Matrix<Plus, Prod, Zero, One, N, Container>*> {
-    //! Returns \p x.hash_value().
-    size_t
-    operator()(Matrix<Plus, Prod, Zero, One, N, Container> const* x) const {
       return x->hash_value();
     }
   };
@@ -1192,103 +1038,150 @@ namespace libsemigroups {
   ////////////////////////////////////////////////////////////////////////
 
   template <size_t dim, size_t thresh>
-  struct LambdaValue<TropicalMaxPlusMat<dim, thresh>> {
-    using type = typename TropicalMaxPlusMat<dim, thresh>::row_collection_type;
+  struct LambdaValue<TropicalMaxPlusMat<dim, dim, thresh>> {
+    using type = typename detail::StaticVector1<
+        typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+        dim>;
   };
 
   template <size_t dim, size_t thresh>
-  struct RhoValue<TropicalMaxPlusMat<dim, thresh>> {
-    using type = typename TropicalMaxPlusMat<dim, thresh>::row_collection_type;
+  struct RhoValue<TropicalMaxPlusMat<dim, dim, thresh>> {
+    using type = typename detail::StaticVector1<
+        typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+        dim>;
   };
 
   template <size_t dim, size_t thresh>
-  struct Lambda<TropicalMaxPlusMat<dim, thresh>,
-                typename LambdaValue<TropicalMaxPlusMat<dim, thresh>>::type> {
-    using mat_type = TropicalMaxPlusMat<dim, thresh>;
+  struct Lambda<
+      TropicalMaxPlusMat<dim, dim, thresh>,
+      detail::StaticVector1<typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+                            dim>> {
+    using mat_type = TropicalMaxPlusMat<dim, dim, thresh>;
     using result_type = typename LambdaValue<mat_type>::type;
-    using scalar_type = typename mat_type::entry_type;
     //! Modifies \p res to contain the row space basis of \p x.
     void operator()(result_type& res, mat_type const& x) const {
-      //TODO assertions
-      //TODO avoid this copying
-      result_type rows = x.rows();
-      std::swap(res, rows);
-      matrix_helpers::tropical_max_plus_row_basis<dim, thresh>(res);
+      matrix_helpers::row_basis<dim, dim, thresh>(x, res);
     }
   };
 
   template <size_t dim, size_t thresh>
-  struct Rho<TropicalMaxPlusMat<dim, thresh>,
-             typename LambdaValue<TropicalMaxPlusMat<dim, thresh>>::type> {
-    using mat_type = TropicalMaxPlusMat<dim, thresh>;
+  struct Rho<
+      TropicalMaxPlusMat<dim, dim, thresh>,
+      detail::StaticVector1<typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+                            dim>> {
+    using mat_type = TropicalMaxPlusMat<dim, dim, thresh>;
     using result_type = typename RhoValue<mat_type>::type;
     //! Modifies \p res to contain the column space basis of \p x.
     void operator()(result_type& res, mat_type const& x) const {
-      // TODO avoid this copying
-      Lambda<mat_type, result_type>()(res, x.transpose());
+      // TODO this is inefficient
+      const_cast<mat_type*>(&x)->transpose();
+      Lambda<mat_type, result_type>()(res, x);
+      const_cast<mat_type*>(&x)->transpose();
     }
   };
 
   template <size_t dim, size_t thresh>
-  struct ImageRightAction<TropicalMaxPlusMat<dim, thresh>,
-                          std::vector<std::array<int64_t, dim>>> {
-    // not noexcept because the constructor of std::vector isn't
+  struct ImageRightAction<
+      TropicalMaxPlusMat<dim, dim, thresh>,
+      detail::StaticVector1<
+          typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+          dim>> {
     //! Stores the image of \p pt under the right action of \p p in \p res.
-    using mat_type = TropicalMaxPlusMat<dim, thresh>;
+    using mat_type = TropicalMaxPlusMat<dim, dim, thresh>;
+    using row_type = typename mat_type::row_type;
+    using row_view_type = typename mat_type::row_view_type;
     using result_type = typename LambdaValue<mat_type>::type;
-    using scalar_type = typename mat_type::entry_type;
+    using scalar_type = typename mat_type::scalar_type;
     void operator()(result_type&       res,
                     result_type const& pt,
                     mat_type const&    x) const {
-      x.right_product(res, pt);
-      matrix_helpers::tropical_max_plus_row_basis<dim, thresh>(res);
+      res.clear();
+      const_cast<mat_type*>(&x)->transpose();
+      auto rows = matrix_helpers::rows(x);
+      result_type prod_rows;
+
+      for (size_t r = 0; r < pt.size(); ++r) {
+        row_type row;
+        for (size_t c = 0; c < dim; ++c) {
+          row(0, c) = std::inner_product(pt[r].cbegin(),
+                                         pt[r].cend(),
+                                         rows[c].cbegin(),
+                                         MaxPlusZero()(),
+                                         MaxPlusPlus(),
+                                         MaxPlusProd<thresh>());
+        }
+        prod_rows.emplace_back(std::move(row));
+      }
+      const_cast<mat_type*>(&x)->transpose();
+      static detail::StaticVector1<row_view_type, dim> row_views;
+      matrix_helpers::row_views(prod_rows, row_views);
+      matrix_helpers::row_basis<dim, thresh>(row_views, res);
     }
   };
 
   template <size_t dim, size_t thresh>
-  struct ImageLeftAction<TropicalMaxPlusMat<dim, thresh>,
-                          std::vector<std::array<int64_t, dim>>> {
+  struct ImageLeftAction<
+      TropicalMaxPlusMat<dim, dim, thresh>,
+      detail::StaticVector1<
+          typename TropicalMaxPlusMat<dim, dim, thresh>::row_type,
+          dim>> {
     // not noexcept because the constructor of std::vector isn't
     //! Stores the image of \p pt under the left action of \p p in \p res.
-    using mat_type = TropicalMaxPlusMat<dim, thresh>;
+    using mat_type = TropicalMaxPlusMat<dim, dim, thresh>;
     using result_type = typename LambdaValue<mat_type>::type;
-    using scalar_type = typename mat_type::entry_type;
+    using scalar_type = typename mat_type::scalar_type;
     void operator()(result_type&       res,
                     result_type const& pt,
                     mat_type const&    x) const {
-      ImageRightAction<mat_type, result_type>()(res, pt, x.transpose());
+      
+      const_cast<mat_type*>(&x)->transpose();
+      ImageRightAction<mat_type, result_type>()(res, pt, x);
+      const_cast<mat_type*>(&x)->transpose();
     }
   };
 
   template <size_t dim, size_t thresh>
-  struct Rank<TropicalMaxPlusMat<dim, thresh>> {
-    using mat_type    = TropicalMaxPlusMat<dim, thresh>;
-    using scalar_type = typename mat_type::entry_type;
+  struct Rank<TropicalMaxPlusMat<dim, dim, thresh>> {
+    using mat_type    = TropicalMaxPlusMat<dim, dim, thresh>;
+    using row_type    = typename mat_type::row_type;
+    using scalar_type = typename mat_type::scalar_type;
     //! Returns the size of the row space of x.
     inline size_t operator()(mat_type const& x) const {
-      auto rows = x.rows();
-      RightAction<std::array<scalar_type, dim>,
-                  std::array<scalar_type, dim>,
-                  matrix_helpers::RowAddition<MaxPlusPlus,
-                                              std::array<scalar_type, dim>>>
-                                   orb;
-      std::array<scalar_type, dim> seed;
-      seed.fill(MaxPlusZero()());
+      auto rows = matrix_helpers::rows(x);
+      RightAction<row_type, row_type, matrix_helpers::RowSum<row_type>> orb;
+      row_type seed;
+      for (auto it = seed.begin(); it != seed.end(); ++it) {
+        *it = MaxPlusZero()();
+      }
       orb.add_seed(seed);
-      std::unordered_set<std::array<scalar_type, dim>> gens;
+      std::unordered_set<row_type, Hash<row_type>> gens;
       for (auto const& row : rows) {
         for (size_t i = 0; i <= thresh; ++i) {
-          gens.insert(
-              matrix_helpers::scalar_row_product<MaxPlusProd<thresh>,
-                                                 std::array<scalar_type, dim>>(
-                  row, i));
+          gens.insert(row_type(row * i));
         }
       }
-      for (auto it = gens.begin(); it != gens.end(); ++it) {
-        orb.add_generator(*it);
+      for (auto& gen : gens) {
+        orb.add_generator(gen);
       }
       orb.run();
       return orb.size();
+    }
+  };
+
+  // TODO where does this go?
+  template <typename T, size_t N>
+  struct Hash<detail::StaticVector1<T, N>> {
+    //! This call operator hashes \p vec.
+    //!
+    //! \param vec the value to hash
+    //!
+    //! \returns A hash value for \p x, a value of type `size_t`.
+    size_t operator()(detail::StaticVector1<T, N> const& vec) const {
+      size_t val = 0;
+      for (T const& x : vec) {
+        val ^= Hash<T>()(x) + 0x9e3779b97f4a7c16 + (val << 6) + (val >> 2);
+      }
+      return val;
     }
   };
 }  // namespace libsemigroups

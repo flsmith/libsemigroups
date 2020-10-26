@@ -133,7 +133,7 @@ namespace libsemigroups {
       }
     }
 
-    row_type operator*(scalar_type a) const {
+    row_type operator*(scalar_type const a) const {
       row_type result(*this);
       result *= a;
       return result;
@@ -159,6 +159,29 @@ namespace libsemigroups {
     bool operator<(T const& that) const {
       return std::lexicographical_compare(
           cbegin(), cend(), that.cbegin(), that.cend());
+    }
+    
+    //! Insertion operator
+    friend std::ostringstream& operator<<(std::ostringstream& os,
+                                          RowView const&       x) {
+      os << row_type(x);
+      return os;
+    }
+
+    //! Insertion operator
+    friend std::ostream& operator<<(std::ostream& os, RowView const& x) {
+      os << detail::to_string(x);
+      return os;
+    }
+
+    // TODO is this the correct thing to do?
+    size_t hash_value() {
+      size_t seed = 0;
+      for (size_t i = 0; i < N; ++i) {
+        seed ^= std::hash<scalar_type>{}(_begin[i]) + 0x9e3779b9 + (seed << 6)
+                + (seed >> 2);
+      }
+      return seed;
     }
 
    private:
@@ -202,10 +225,6 @@ namespace libsemigroups {
     ////////////////////////////////////////////////////////////////////////
     // Constructors + destructor
     ////////////////////////////////////////////////////////////////////////
-
-    // TODO remove
-    using row_type = typename std::array<entry_type, N>;
-    using row_collection_type = typename std::vector<row_type>;
 
     Matrix() = default;
 
@@ -496,9 +515,7 @@ namespace libsemigroups {
     // TODO formatting
     friend std::ostringstream& operator<<(std::ostringstream& os,
                                           Matrix const&       x) {
-      if (R == 1) {
-        os << x._container;
-      }
+      os << x._container;
       return os;
     }
 
@@ -632,21 +649,35 @@ namespace libsemigroups {
       return container;
     }
 
-    template <size_t R, size_t C, size_t T, typename Container>
-    void row_basis(TropicalMaxPlusMat<R, C, T> const& x, Container& result) {
-      using matrix_type = TropicalMaxPlusMat<R, C, T>;
+    template <typename RowContainer, typename RowViewContainer>
+    void row_views(RowContainer const& rows, RowViewContainer& res) {
+      using row_type = typename RowContainer::value_type;
+      using row_view_type = typename row_type::row_view_type;
+      res.clear();
+      for (size_t i = 0; i < rows.size(); ++i) {
+        res.push_back(row_view_type(rows[i]));
+      }
+    }
+
+    template <size_t C,
+              size_t T,
+              typename RowViewContainer,
+              typename ResultContainer>
+    void row_basis(RowViewContainer& views, ResultContainer& result) {
+      using matrix_type = TropicalMaxPlusMat<C, C, T>;
       using scalar_type = typename matrix_type::scalar_type;
       using RowView     = typename matrix_type::row_view_type;
       using Row         = typename matrix_type::row_type;
       using Zero        = typename matrix_type::Zero;
 
-      auto views = rows(x);
+      result.clear();
       std::sort(views.begin(),
                 views.end(),
                 [](RowView const& rv1, RowView const& rv2) {
                   return std::lexicographical_compare(
                       rv1.begin(), rv1.end(), rv2.begin(), rv2.end());
                 });
+
       Row tmp1;
 
       for (size_t r1 = 0; r1 < views.size(); ++r1) {
@@ -673,17 +704,23 @@ namespace libsemigroups {
             }
           }
           if (tmp1 != views[r1]) {
-            result.push_back(views[r1]);
+            result.push_back(Row(views[r1]));
           }
         }
       }
+    }
+
+    template <size_t R, size_t C, size_t T, typename Container>
+    void row_basis(TropicalMaxPlusMat<R, C, T> const& x, Container& result) {
+      auto views = rows(x);
+      row_basis<C, T>(views, result);
     }
 
     template <size_t R,
               size_t C,
               size_t T,
               typename Container = detail::StaticVector1<
-                  typename TropicalMaxPlusMat<R, C, T>::row_view_type,
+                  typename TropicalMaxPlusMat<R, C, T>::row_type,
                   R>>
     Container row_basis(TropicalMaxPlusMat<R, C, T> const& x) {
       Container result;
@@ -691,6 +728,13 @@ namespace libsemigroups {
       return result;
     }
 
+    template <typename Row>
+    struct RowSum {
+      void operator()(Row& res, Row const& pt, Row const& x) const {
+        res = pt;
+        res += x;
+      }
+    };
   }  // namespace matrix_helpers
 
   ////////////////////////////////////////////////////////////////////////
@@ -723,6 +767,29 @@ namespace libsemigroups {
       typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
                               void>::type> {
     constexpr size_t operator()(T const& x) const {
+      return x.hash_value();
+    }
+  };
+
+  template <typename T>
+  struct Hash<
+      T*,
+      typename std::enable_if<std::is_base_of<MatrixPolymorphicBase, T>::value,
+                              void>::type> {
+    constexpr size_t operator()(T* const& x) const {
+      return x->hash_value();
+    }
+  };
+
+  template <typename PlusOp,
+            typename ProdOp,
+            typename ZeroOp,
+            typename OneOp,
+            size_t N,
+            typename Container>
+  struct Hash<RowView<PlusOp, ProdOp, ZeroOp, OneOp, N, Container>> {
+    size_t operator()(
+        RowView<PlusOp, ProdOp, ZeroOp, OneOp, N, Container> const& x) const {
       return x.hash_value();
     }
   };

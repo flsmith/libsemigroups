@@ -50,37 +50,38 @@ namespace libsemigroups {
       }
     }
   };
-
-  template <typename Prod, typename Container>
-  Container scalar_row_product(Container                      row,
-                               typename Container::value_type scalar) {
-    Container out(row);
-    for (size_t i = 0; i < out.size(); ++i) {
-      out[i] = Prod()(out[i], scalar);
-    }
-    return out;
-  }
+  
+  template<size_t dim, size_t thresh>
+  using row_type = typename TropicalMaxPlusMat<dim, dim, thresh>::row_type;
 
   template <size_t dim, size_t thresh>
-  void
-  tropical_max_plus_row_basis(std::vector<std::array<int64_t, dim>>& rows) {
-    static thread_local std::vector<std::array<int64_t, dim>> buf;
+  using row_view_type =
+      typename TropicalMaxPlusMat<dim, dim, thresh>::row_view_type;
+
+  template <size_t dim, size_t thresh>
+  void tropical_max_plus_row_basis(
+      detail::StaticVector1<row_type<dim, thresh>, dim>& rows) {
+    static thread_local detail::StaticVector1<row_type<dim, thresh>,
+                                              dim>
+        buf;
     buf.clear();
     std::sort(rows.begin(), rows.end());
     for (size_t row = 0; row < rows.size(); ++row) {
-      std::array<int64_t, dim> sum;
-      sum.fill(NEGATIVE_INFINITY);
+      row_type<dim, thresh> sum;
+      for(auto it = sum.begin(); it != sum.end(); ++it) {
+        *it = MaxPlusZero()();
+      }
       if (row == 0 || rows[row] != rows[row - 1]) {
         for (size_t row2 = 0; row2 < row; ++row2) {
           int64_t max_scalar = thresh;
           for (size_t col = 0; col < dim; ++col) {
-            if (rows[row2][col] == NEGATIVE_INFINITY) {
+            if (rows[row2](0, col) == NEGATIVE_INFINITY) {
               continue;
             }
-            if (rows[row][col] >= rows[row2][col]) {
-              if (rows[row][col] != thresh) {
+            if (rows[row](0, col) >= rows[row2](0, col)) {
+              if (rows[row](0, col) != thresh) {
                 max_scalar
-                    = std::min(max_scalar, rows[row][col] - rows[row2][col]);
+                    = std::min(max_scalar, rows[row](0, col) - rows[row2](0, col));
               }
             } else {
               max_scalar = NEGATIVE_INFINITY;
@@ -88,11 +89,7 @@ namespace libsemigroups {
             }
           }
           if (max_scalar != NEGATIVE_INFINITY) {
-            auto scalar_prod = scalar_row_product<MaxPlusProd<thresh>,
-                                                  std::array<int64_t, dim>>(
-                rows[row2], max_scalar);
-            RowAddition<MaxPlusPlus, std::array<int64_t, dim>>()(sum,
-                                                                 scalar_prod);
+            sum += row_view_type<dim, thresh>(rows[row2]) * max_scalar;
           }
         }
         if (sum != rows[row]) {
@@ -153,24 +150,24 @@ namespace libsemigroups {
     REQUIRE(x.row(0) == Row({3, 5}));
     REQUIRE(x.row(1) == Row({5, 7}));
 
-    std::vector<std::array<int64_t, 2>> expected;
+    detail::StaticVector1<Row, 2> expected;
     for (auto& r : matrix_helpers::rows(x)) {
       std::array<int64_t, 2> rr;
       std::copy(r.cbegin(), r.cend(), rr.begin());
-      expected.push_back(rr);
+      expected.push_back(Row(rr));
     }
-    REQUIRE(std::array<int64_t, 2>({3, 5}) == expected.at(0));
-    REQUIRE(std::array<int64_t, 2>({5, 7}) == expected.at(1));
+    REQUIRE(Row({3, 5}) == expected[0]);
+    REQUIRE(Row({5, 7}) == expected[1]);
     tropical_max_plus_row_basis<2, 9>(expected);
     REQUIRE(expected.size() == rb.size());
 
     for (auto const& x : S) {
       auto                                rb = matrix_helpers::row_basis(x);
-      std::vector<std::array<int64_t, 2>> expected;
+      detail::StaticVector1<Row, 2> expected;
       for (auto& r : matrix_helpers::rows(x)) {
         std::array<int64_t, 2> rr;
         std::copy(r.cbegin(), r.cend(), rr.begin());
-        expected.push_back(rr);
+        expected.push_back(Row(rr));
       }
       tropical_max_plus_row_basis<2, 9>(expected);
       REQUIRE(expected.size() == rb.size());
@@ -182,7 +179,7 @@ namespace libsemigroups {
                           "500",
                           "(new tropical max-plus matrices)",
                           "[quick][froidure-pin][tropmaxplus]") {
-    using Mat = TropicalMaxPlusMat<2, 9>;
+    using Mat = TropicalMaxPlusMat<2, 2, 9>;
     std::vector<Mat> gens
         = {Mat({{1, 3}, {2, 1}}),
            Mat({{2, 1}, {4, 0}})};
