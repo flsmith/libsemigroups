@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include <cmath>    // for pow
 #include <cstddef>  // for size_t
 
 #include "bench-main.hpp"  // for CATCH_CONFIG_ENABLE_BENCHMARKING
@@ -23,7 +24,10 @@
 
 #include "libsemigroups/bitset.hpp"        // for BitSet
 #include "libsemigroups/bmat.hpp"          // for BMat adapters
+#include "libsemigroups/constants.hpp"     // for UNDEFINED
+#include "libsemigroups/fastest-bmat.hpp"  // for FastestBMat
 #include "libsemigroups/froidure-pin.hpp"  // for FroidurePin
+#include "libsemigroups/konieczny.hpp"     // for Konieczny
 #include "libsemigroups/matrix.hpp"        // for BMat
 #include "libsemigroups/report.hpp"        // for ReportGuard
 #include "libsemigroups/transf.hpp"        // for Transformation
@@ -162,6 +166,321 @@ namespace libsemigroups {
     S.add_generator(Transf({5, 6, 3, 0, 3, 0, 5, 1}));
     S.add_generator(Transf({6, 0, 1, 1, 1, 6, 3, 4}));
     S.add_generator(Transf({7, 7, 4, 0, 6, 4, 1, 7}));
+  }
+
+  template <typename T>
+  void hall_monoid3(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generator(BMat({{0, 1, 0}, {0, 0, 1}, {1, 0, 0}}));
+    S.add_generator(BMat({{0, 1, 0}, {1, 0, 0}, {0, 0, 1}}));
+    S.add_generator(BMat({{1, 1, 0}, {0, 1, 0}, {0, 0, 1}}));
+    S.add_generator(BMat({{0, 1, 1}, {1, 0, 1}, {1, 1, 0}}));
+  }
+
+  template <typename T>
+  void hall_monoid4(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generator(
+        BMat({{0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {1, 0, 0, 0}}));
+    S.add_generator(
+        BMat({{0, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
+    S.add_generator(
+        BMat({{1, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
+    S.add_generator(
+        BMat({{0, 0, 1, 1}, {0, 1, 0, 1}, {1, 0, 1, 0}, {1, 1, 0, 0}}));
+    S.add_generator(
+        BMat({{0, 0, 1, 1}, {0, 1, 0, 1}, {1, 0, 0, 1}, {1, 1, 1, 0}}));
+    S.add_generator(
+        BMat({{0, 0, 0, 1}, {0, 1, 1, 0}, {1, 0, 1, 0}, {1, 1, 0, 0}}));
+  }
+
+  template <typename T>
+  void hall_monoid5(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generator(BMat({{0, 1, 0, 0, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 0, 0, 1},
+                          {1, 0, 0, 0, 0}}));
+    S.add_generator(BMat({{0, 1, 0, 0, 0},
+                          {1, 0, 0, 0, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 0, 0, 1}}));
+    S.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 0, 1, 0},
+                          {0, 0, 1, 0, 0},
+                          {0, 1, 0, 0, 0},
+                          {1, 0, 0, 0, 1}}));
+    S.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 0, 1, 0},
+                          {0, 1, 1, 0, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+    S.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 1, 1, 0},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 0, 1, 0},
+                          {1, 1, 1, 0, 0}}));
+    S.add_generator(BMat({{0, 0, 0, 0, 1},
+                          {0, 0, 1, 1, 0},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 0, 1},
+                          {1, 0, 0, 0, 1},
+                          {1, 1, 1, 1, 0}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 0, 1},
+                          {1, 0, 0, 1, 0},
+                          {1, 1, 1, 0, 0}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 1}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 1, 0},
+                          {1, 1, 0, 0, 1}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 1, 1, 0},
+                          {1, 0, 1, 1, 0},
+                          {1, 1, 0, 0, 1}}));
+    S.add_generator(BMat({{0, 0, 0, 1, 1},
+                          {0, 0, 1, 0, 1},
+                          {0, 1, 0, 1, 0},
+                          {1, 0, 1, 0, 0},
+                          {1, 1, 0, 0, 0}}));
+  }
+
+  template <typename T>
+  void unitriangular_boolean_mat_monoid3(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generators({BMat({{1, 1, 0}, {0, 1, 0}, {0, 0, 1}}),
+                      BMat({{1, 0, 1}, {0, 1, 0}, {0, 0, 1}}),
+                      BMat({{1, 0, 0}, {0, 1, 1}, {0, 0, 1}})});
+    S.add_generator(One<BMat>()());
+  }
+
+  template <typename T>
+  void unitriangular_boolean_mat_monoid4(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generators(
+        {BMat({{1, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat({{1, 0, 1, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat({{1, 0, 0, 1}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat({{1, 0, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat({{1, 0, 0, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}, {0, 0, 0, 1}}),
+         BMat({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 1}, {0, 0, 0, 1}})});
+    S.add_generator(One<BMat>()());
+  }
+
+  template <typename T>
+  void unitriangular_boolean_mat_monoid5(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generators({BMat({{1, 1, 0, 0, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 1, 0, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 1, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 1},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 1, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 0, 1, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 1},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 1, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 1},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0},
+                            {0, 0, 0, 1, 1},
+                            {0, 0, 0, 0, 1}})});
+    S.add_generator(One<BMat>()());
+  }
+
+  template <typename T>
+  void unitriangular_boolean_mat_monoid6(T& S) {
+    using BMat = typename T::element_type;
+    S.add_generators({BMat({{1, 1, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 1, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 1, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 1, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 1},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 1, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 1, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 1, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 1},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 1, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 1, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 1},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 1, 0},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 1},
+                            {0, 0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 1}}),
+                      BMat({{1, 0, 0, 0, 0, 0},
+                            {0, 1, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 1, 1},
+                            {0, 0, 0, 0, 0, 1}})});
+    S.add_generator(One<BMat>()());
+  }
+
+  template <typename T>
+  void symmetric_group(T& S, size_t n) {
+    using Perm    = typename T::element_type;
+    Perm transpos = One<Perm>()();
+    transpos[0]   = 1;
+    transpos[1]   = 0;
+    S.add_generator(transpos);
+
+    Perm cycle = One<Perm>()();
+    std::iota(cycle.begin(), cycle.begin() + n - 1, 1);
+    cycle[n - 1] = 0;
+    S.add_generator(cycle);
+  }
+
+  template <typename T>
+  void full_transf_monoid(T& S, size_t n) {
+    symmetric_group(S, n);
+
+    using Trans = typename T::element_type;
+    Trans sing  = One<Trans>()();
+    sing[0]     = 1;
+    S.add_generator(sing);
+  }
+
+  template <typename T>
+  void symmetric_inverse_monoid(T& S, size_t n) {
+    symmetric_group(S, n);
+
+    using PPerm = typename T::element_type;
+    PPerm sing  = One<PPerm>()();
+    sing[0]     = UNDEFINED;
+    S.add_generator(sing);
+  }
+
+  template <typename T>
+  void order_preserving_monoid(T& S, size_t n) {
+    using Trans    = typename T::element_type;
+    Trans decrease = One<Trans>()();
+    decrease[0]    = 0;
+    std::iota(decrease.begin() + 1, decrease.begin() + n, 0);
+    S.add_generator(decrease);
+
+    for (size_t i = 0; i < n - 1; ++i) {
+      Trans increase = One<Trans>()();
+      increase[i]    = i + 1;
+      S.add_generator(increase);
+    }
+    S.add_generator(One<Trans>()());
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1082,4 +1401,258 @@ namespace libsemigroups {
     benchmark_transf_lambda<BitSet<64>>(S, "Lambda<Transf>, BitSet<64>");
   }
 
+  ////////////////////////////////////////////////////////////////////////
+  // Benchmarks for the Konieczny paper
+  ////////////////////////////////////////////////////////////////////////
+
+  TEST_CASE("Hall monoid 3", "[quick][100][bmat][hall]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<3>;
+    BENCHMARK_ADVANCED("Hall monoid 3: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      hall_monoid3(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 247);
+      });
+    };
+    BENCHMARK_ADVANCED("Hall monoid 3: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      hall_monoid3(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 247);
+      });
+    };
+  }
+
+  TEST_CASE("Hall monoid 4", "[standard][101][bmat][hall]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<4>;
+    BENCHMARK_ADVANCED("Hall monoid 4: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      hall_monoid4(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 37823);
+      });
+    };
+    BENCHMARK_ADVANCED("Hall monoid 4: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      hall_monoid4(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 37823);
+      });
+    };
+  }
+
+  TEST_CASE("Hall monoid 5", "[extreme][102][bmat][hall]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<5>;
+    BENCHMARK_ADVANCED("Hall monoid 5: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      hall_monoid5(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 23191071);
+      });
+    };
+    BENCHMARK_ADVANCED("Hall monoid 5: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      hall_monoid5(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 23191071);
+      });
+    };
+  }
+
+  TEST_CASE("Unitriangular boolean mat monoid 3",
+            "[quick][103][bmat][unitriangular]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<3>;
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 3: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      unitriangular_boolean_mat_monoid3(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 8);
+      });
+    };
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 3: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      unitriangular_boolean_mat_monoid3(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 8);
+      });
+    };
+  }
+
+  TEST_CASE("Unitriangular boolean mat monoid 4",
+            "[extreme][104][bmat][unitriangular]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<4>;
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 4: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      unitriangular_boolean_mat_monoid4(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 64);
+      });
+    };
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 4: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      unitriangular_boolean_mat_monoid4(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 64);
+      });
+    };
+  }
+
+  TEST_CASE("Unitriangular boolean mat monoid 5",
+            "[extreme][105][bmat][unitriangular]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<5>;
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 5: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      unitriangular_boolean_mat_monoid5(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 1024);
+      });
+    };
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 5: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      unitriangular_boolean_mat_monoid5(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 1024);
+      });
+    };
+  }
+
+  TEST_CASE("Unitriangular boolean mat monoid 6",
+            "[extreme][106][bmat][unitriangular]") {
+    auto rg    = ReportGuard(false);
+    using BMat = FastestBMat<6>;
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 6: Konieczny<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      Konieczny<BMat> K;
+      unitriangular_boolean_mat_monoid6(K);
+      meter.measure([&K] {
+        K.run();
+        REQUIRE(K.size() == 32768);
+      });
+    };
+    BENCHMARK_ADVANCED("Unitriangular boolean mat monoid 6: FroidurePin<BMat>")
+    (Catch::Benchmark::Chronometer meter) {
+      FroidurePin<BMat> F;
+      unitriangular_boolean_mat_monoid6(F);
+      meter.measure([&F] {
+        F.run();
+        REQUIRE(F.size() == 32768);
+      });
+    };
+  }
+
+  TEST_CASE("Full transformation monoid", "[extreme][107][transf]") {
+    auto rg     = ReportGuard(false);
+    using Trans = LeastTransf<8>;
+    for (size_t i = 5; i < 9; ++i) {
+      BENCHMARK_ADVANCED("Full transformation monoid " + std::to_string(i)
+                         + ": Konieczny<Transf>")
+      (Catch::Benchmark::Chronometer meter) {
+        Konieczny<Trans> K;
+        full_transf_monoid(K, i);
+        meter.measure([&K, i] {
+          K.run();
+          REQUIRE(K.size() == pow(i, i));
+        });
+      };
+      BENCHMARK_ADVANCED("Full transformation monoid " + std::to_string(i)
+                         + ": FroidurePin<Transf>")
+      (Catch::Benchmark::Chronometer meter) {
+        FroidurePin<Trans> F;
+        full_transf_monoid(F, i);
+        meter.measure([&F, i] {
+          F.run();
+          REQUIRE(F.size() == pow(i, i));
+        });
+      };
+    }
+  }
+
+  TEST_CASE("Symmetric inverse monoid", "[extreme][108][transf]") {
+    auto rg     = ReportGuard(false);
+    using PPerm = LeastPPerm<8>;
+    std::vector<size_t> sizes
+        = {0, 2, 7, 34, 209, 1546, 13327, 130922, 1441729, 17572114};
+    for (size_t i = 5; i < 10; ++i) {
+      BENCHMARK_ADVANCED("Symmetric inverse monoid " + std::to_string(i)
+                         + ": Konieczny<PPerm>")
+      (Catch::Benchmark::Chronometer meter) {
+        Konieczny<PPerm> K;
+        symmetric_inverse_monoid(K, i);
+        meter.measure([&K, &sizes, i] {
+          K.run();
+          REQUIRE(K.size() == sizes[i]);
+        });
+      };
+      BENCHMARK_ADVANCED("Symmetric inverse monoid " + std::to_string(i)
+                         + ": FroidurePin<PPerm>")
+      (Catch::Benchmark::Chronometer meter) {
+        FroidurePin<PPerm> F;
+        symmetric_inverse_monoid(F, i);
+        meter.measure([&F, &sizes, i] {
+          F.run();
+          REQUIRE(F.size() == sizes[i]);
+        });
+      };
+    }
+  }
+
+  TEST_CASE("Order preserving transformation monoids",
+            "[extreme][109][transf]") {
+    auto rg      = ReportGuard(false);
+    using Transf = LeastTransf<8>;
+    std::vector<size_t> sizes
+        = {0, 1, 3, 10, 35, 126, 462, 1716, 6435, 24310, 92378, 352716, 1352078};
+    for (size_t i = 5; i < 11; ++i) {
+      BENCHMARK_ADVANCED("Order endomorphism monoid " + std::to_string(i)
+                         + ": Konieczny<Transf>")
+      (Catch::Benchmark::Chronometer meter) {
+        Konieczny<Transf> K;
+        order_preserving_monoid(K, i);
+        meter.measure([&K, &sizes, i] {
+          K.run();
+          REQUIRE(K.size() == sizes[i]);
+        });
+      };
+      BENCHMARK_ADVANCED("Order endomorphism monoid " + std::to_string(i)
+                         + ": FroidurePin<Transf>")
+      (Catch::Benchmark::Chronometer meter) {
+        FroidurePin<Transf> F;
+        order_preserving_monoid(F, i);
+        meter.measure([&F, &sizes, i] {
+          F.run();
+          REQUIRE(F.size() == sizes[i]);
+        });
+      };
+    }
+  }
 }  // namespace libsemigroups
